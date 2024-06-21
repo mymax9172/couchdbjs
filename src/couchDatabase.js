@@ -62,12 +62,17 @@ export class CouchDatabase {
 			const model = namespace.models[modelName];
 
 			// Create a property for the service provider into the database instance
+			const serviceName = model.typeName;
 			if (model.singleton) {
-				const serviceName = model.typeName;
-				serviceSpace[serviceName] = new SingletonService(namespace, model.typeName);
+				serviceSpace[serviceName] = new SingletonService(
+					namespace,
+					model.typeName
+				);
 			} else {
-				const serviceName = model.typeName + "List";
-				serviceSpace[serviceName] = new CollectionService(namespace, model.typeName);
+				serviceSpace[serviceName] = new CollectionService(
+					namespace,
+					model.typeName
+				);
 			}
 		});
 	}

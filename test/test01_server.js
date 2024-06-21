@@ -34,6 +34,7 @@ describe("Server class", function () {
 	// Create a schema-less database
 	it("create(): Create a new database without any schema", async function () {
 		const result = await couchDB.create(dbName);
+		console.info(result);
 		result.should.be.a("object").to.have.property("ok").that.is.true;
 	});
 	// Delete an existing database

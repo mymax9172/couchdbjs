@@ -88,13 +88,8 @@ export class Namespace {
 		const model = this.models[typeName];
 
 		// Get the service
-		if (model.singleton) {
-			const serviceName = model.typeName;
-			return this.database.data[this.name][serviceName];
-		} else {
-			const serviceName = model.typeName + "List";
-			return this.database.data[this.name][serviceName];
-		}
+		const serviceName = model.typeName;
+		return this.database.data[this.name][serviceName];
 	}
 
 	/**
