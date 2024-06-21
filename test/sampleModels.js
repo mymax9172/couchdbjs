@@ -1,3 +1,6 @@
+import { CouchDatabase } from "../src/couchDatabase.js";
+import { Namespace } from "../src/model/namespace.js";
+
 import { PropertyType } from "../src/model/propertyType.js";
 import { StandardTypes } from "../src/model/types/index.js";
 
@@ -140,8 +143,55 @@ const model6 = {
 		user: {
 			model: model4,
 		},
+		managers: {
+			model: model4,
+			multiple: true,
+		},
 	},
 };
+
+const model7 = {
+	typeName: "organization",
+	singleton: false,
+	properties: {
+		company: {
+			model: model6,
+		},
+	},
+};
+
+const model8 = {
+	typeName: "project",
+	singleton: false,
+	properties: {
+		company: {
+			reference: model6,
+		},
+		authors: {
+			reference: model4,
+			multiple: true,
+		},
+	},
+};
+
+class DefaultNamespace extends Namespace {
+	constructor() {
+		super();
+
+		this.name = "default";
+		this.useModel(model4);
+		this.useModel(model6);
+		this.useModel(model8);
+	}
+}
+
+export class ExampleDb extends CouchDatabase {
+	constructor(nanoDb) {
+		super(nanoDb);
+
+		this.useNamespace(new DefaultNamespace());
+	}
+}
 
 export default {
 	model1,
@@ -150,4 +200,6 @@ export default {
 	model4,
 	model5,
 	model6,
+	model7,
+	model8,
 };

@@ -24,4 +24,32 @@ export class DataService {
 	async getAttachment(docId, attachmentName) {
 		return await this.database.attachment.get(docId, attachmentName);
 	}
+
+	async save(entity) {
+		// Validation
+		try {
+			entity.validate();
+		} catch (error) {
+			throw new Error(
+				"Validation error of type " +
+					this.typeName +
+					"(" +
+					entity +
+					"): " +
+					error
+			);
+		}
+
+		try {
+			// Save it
+			const json = JSON.parse(JSON.stringify(entity.export()));
+			const result = await this.namespace.database.nanoDb.insert(json);
+			if (result.ok) entity.document._rev = result.rev;
+
+			return result;
+		} catch (error) {
+			console.error(error);
+			return null;
+		}
+	}
 }

@@ -11,6 +11,9 @@ export class Entity {
 	// Internal document
 	document;
 
+	// Referenced entities
+	refs = {};
+
 	/**
 	 * Create a new entity
 	 * Do not call this method directly, use createEntity method in namespace
@@ -87,13 +90,17 @@ export class Entity {
 		const propertyNames = Object.keys(this.model.properties);
 		propertyNames.forEach((propertyName) => {
 			const propertyDefinition = this.model.properties[propertyName];
+			const value = this[propertyName];
 
-			const result = factory.validateProperty(
-				this[propertyName],
-				this,
-				propertyDefinition
-			);
-			if (typeof result === "string") throw new Error(result);
+			if (propertyDefinition.multiple) {
+				// Validation of all elements
+				value.forEach((element) => {
+					factory.validatePropertyValue(element, this, propertyName);
+				});
+			} else {
+				// Validation of one element
+				factory.validatePropertyValue(value, this, propertyName);
+			}
 		});
 		return true;
 	}

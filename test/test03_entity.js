@@ -202,4 +202,57 @@ describe("Entity class", function () {
 		}).not.to.throw();
 		entity.user.should.be.an.instanceof(Entity);
 	});
+
+	it("Manage nested property as array", function () {
+		namespace.useModel(models.model6);
+		namespace.useModel(models.model4);
+
+		const entity = namespace.createEntity(models.model6.typeName);
+		const users = [];
+		for (let i = 0; i < 5; i++) {
+			const user = namespace.createEntity(models.model4.typeName);
+			user.username = "user" + i;
+			users.push(user);
+		}
+		expect(() => {
+			entity.managers = users;
+		}).not.to.throw();
+		entity.managers[0].should.be.an.instanceof(Entity);
+	});
+
+	it("Control nested value in an array", function () {
+		namespace.useModel(models.model6);
+		namespace.useModel(models.model4);
+
+		const entity = namespace.createEntity(models.model6.typeName);
+		const users = [];
+		for (let i = 0; i < 5; i++) {
+			const user = {};
+			user.username = "user" + i;
+			users.push(user);
+		}
+		expect(() => {
+			entity.managers = users;
+		}).to.throw();
+	});
+
+	it("Deep hierarchy of entities", function () {
+		namespace.useModel(models.model4);
+		namespace.useModel(models.model6);
+		namespace.useModel(models.model7);
+		
+		const organization = namespace.createEntity(models.model7.typeName);
+		const company = namespace.createEntity(models.model6.typeName);
+		const managers = [];
+		for (let i = 0; i < 5; i++) {
+			const user = namespace.createEntity(models.model4.typeName);
+			user.username = "manager " + i;
+			managers.push(user);
+		}
+		company.managers = managers;
+		expect(() => {
+			organization.company = company;
+		}).not.to.throw();
+		organization.company.managers[0].should.be.an.instanceof(Entity);
+	});
 });

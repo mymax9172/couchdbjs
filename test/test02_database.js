@@ -7,20 +7,20 @@ chai.should();
 describe("Database class", function () {
 	// Url address
 	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
-
 	// Create a server instance
 	const couchDB = new CouchServer(url);
-
 	// Test database
 	const dbName = "test";
 	var db;
-
 	before(async function () {
+		// Check if the database exist, in case delete it
+		if (await couchDB.exists(dbName)) {
+			await couchDB.delete(dbName);
+		}
 		// Create test database
 		await couchDB.create(dbName, SampleDb);
 		db = couchDB.use("test", SampleDb);
 	});
-
 	after(async function () {
 		// Remove test database
 		await couchDB.delete(dbName);
@@ -55,7 +55,6 @@ describe("Database class", function () {
 			.have.property("id")
 			.that.is.equal("default/owner");
 	});
-
 	// Read a singleton entity
 	it("get(): Read the previuos created singleton entity", async function () {
 		const owner = await db.data.default.owner.get();
@@ -64,7 +63,6 @@ describe("Database class", function () {
 			.have.property("id")
 			.that.is.equal("default/owner");
 	});
-
 	// Delete a singleton entity
 	it("delete(): Delete the previuos created singleton entity", async function () {
 		const result = await db.data.default.owner.delete();

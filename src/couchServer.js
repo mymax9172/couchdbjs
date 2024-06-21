@@ -42,6 +42,16 @@ export class CouchServer {
 	}
 
 	/**
+	 * Check if a database name exists
+	 * @param {String} name Name of the database to check existency
+	 * @returns {Boolean} True if the database exists
+	 */
+	async exists(name) {
+		const list = await this.getDatabaseList();
+		return list.includes(name);
+	}
+
+	/**
 	 * Create a new database in the server
 	 * @param {string} name Name of the database
 	 * @param {CouchDatabase} databaseClass Class of the database to be used
