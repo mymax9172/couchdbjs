@@ -1,6 +1,7 @@
 import nano from "nano";
 import { CouchDatabase } from "./couchDatabase.js";
 import { checkMandatoryArgument } from "./helpers/tools.js";
+import { Namespace } from "./model/namespace.js";
 
 /**
  * Server class for a CouchDB server

@@ -381,12 +381,11 @@ export const {
 }
 ```
 
-In this case, for a customer we need at least on between name and legalName, the first argument is the actual entity.
+In this case, for a customer we need at least one between name and legalName, the first argument is the actual entity.
 
 #### Computed property
 
-A computed property is a fictional property not stored in the database but calculated anytime on-the-fly
-
+A computed property is a finctional property not stored in the database but calculated anytime on-the-fly
 
 `user-datamodel.js`
 
@@ -424,7 +423,6 @@ By setting a property as 'readonly' the entity class does not have any setter an
 
 Of course the last two are highly discouraged because the break all controls in place
 
-
 `user-datamodel.js`
 
 ```js
@@ -451,12 +449,69 @@ export const {
 	}
 }
 ```
+
 'readonly' can also be expressed as function (same rules seen in 'required')
 
+#### Hasing and Encyprion
+
+Sometime is required to hash a value (i.e. password). In this case the property hashed can support that.
+
+`user-datamodel.js`
+
+```js
+export const {
+	typeName: "user",
+	singleton: false,
+	properties: {
+		username: {
+			required: true,
+		},
+		password: {
+			required: true,
+			hashed: true
+		},
+	}
+}
+```
+
+Hashing is performed once set the value (so even in the class instance the value is stored hashed and cannot be read again). Hashing is irreversible
+
+
+```js
+const user = mybb.data.security.user.create();
+
+user.password = "welcome1a";
+console.log(user.password); 
+[Result: "fd479f8219295f5e91efb4e90a3f29fb6e59c2f4a71238a4f596bb7da1b4add1"]
+```
+
+Same for encryption, but in this case the value is encrypted only at rest (database) but it is decrypted at class instance level
+
+`user-datamodel.js`
+
+```js
+export const {
+	typeName: "user",
+	singleton: false,
+	properties: {
+		username: {
+			required: true,
+		},
+		password: {
+			required: true,
+			hashed: true
+		},
+		taxCode: {
+			encypted: true,
+		}
+	}
+}
+
+
+```
 
 [1]: https://npmjs.org
 [2]: https://github.com/apache/couchdb-nano/issues
 [4]: https://github.com/apache/couchdb-nano/blob/main/cfg/couch.example.js
 [8]: https://webchat.freenode.net?channels=%23couchdb-dev
 [axios]: https://github.com/axios/axios
-

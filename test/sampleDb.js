@@ -33,7 +33,7 @@ const userModel = {
 	},
 };
 
-class SecurityNamespace extends Namespace {
+class DefaultNamespace extends Namespace {
 	constructor() {
 		super();
 
@@ -47,6 +47,6 @@ export class SampleDb extends CouchDatabase {
 	constructor(nanoDb) {
 		super(nanoDb);
 
-		this.useNamespace(new SecurityNamespace());
+		this.useNamespace(new DefaultNamespace());
 	}
 }

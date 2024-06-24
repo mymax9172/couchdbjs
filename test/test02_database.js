@@ -23,7 +23,7 @@ describe("Database class", function () {
 	});
 	after(async function () {
 		// Remove test database
-		await couchDB.delete(dbName);
+		//await couchDB.delete(dbName);
 	});
 
 	// Get database info
@@ -55,6 +55,7 @@ describe("Database class", function () {
 			.have.property("id")
 			.that.is.equal("default/owner");
 	});
+
 	// Read a singleton entity
 	it("get(): Read the previuos created singleton entity", async function () {
 		const owner = await db.data.default.owner.get();
@@ -63,9 +64,31 @@ describe("Database class", function () {
 			.have.property("id")
 			.that.is.equal("default/owner");
 	});
+
 	// Delete a singleton entity
 	it("delete(): Delete the previuos created singleton entity", async function () {
 		const result = await db.data.default.owner.delete();
 		result.should.be.a("object").to.have.property("ok").that.is.true;
+	});
+
+	// Save and read a collection of entities
+	it("getAll(): get all 3 entities", async function () {
+		for (let i = 0; i < 3; i++) {
+			const user = await db.data.default.user.create();
+			user.firstName = "User " + i;
+			user.lastName = "Unknown";
+			await user.save();
+		}
+		const list = await db.data.default.user.getAll();
+		list.should.have.lengthOf(3);
+		//console.log(list);
+	});
+
+	// Find an entity by query
+	it("find(): get just one user", async function () {
+		const user = await db.data.default.user.findOne({
+			firstName: "User 1",
+		});
+		user.should.be.a("object").to.have.property("firstName", "User 1");
 	});
 });
