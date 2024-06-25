@@ -6,7 +6,7 @@ import {
 } from "../helpers/tools.js";
 import { security } from "../helpers/security.js";
 import { Namespace } from "./namespace.js";
-import { createReference } from "./reference.js";
+import { Reference, createReference } from "./reference.js";
 
 export class EntityFactory {
 	typeName;
@@ -36,6 +36,18 @@ export class EntityFactory {
 			const propertyDefinition = model.properties[propertyName];
 			this.createProperty(entity, propertyName, propertyDefinition);
 		});
+
+		// Create relationships
+		if (model.relationships) {
+			Object.keys(model.relationships).forEach((relationshipName) => {
+				const relationshipDefinition = model.relationships[relationshipName];
+				this.createRelationship(
+					entity,
+					relationshipName,
+					relationshipDefinition
+				);
+			});
+		}
 
 		// return the entity
 		return entity;
@@ -136,10 +148,11 @@ export class EntityFactory {
 					// Check if it is a model
 					if (propertyDefinition.model) {
 						// Recreate the entity / array of entity
-						const namespace = propertyDefinition.namespace
-							? propertyDefinition.namespace()
-							: factory.namespace;
-						const typeName = propertyDefinition.model.typeName;
+						const namespaceName =
+							propertyDefinition.namespace || factory.namespace.name;
+						const namespace =
+							factory.namespace.database.namespaces[namespaceName];
+						const typeName = propertyDefinition.model;
 
 						if (propertyDefinition.multiple) {
 							// Array
@@ -208,10 +221,12 @@ export class EntityFactory {
 
 				if (propertyDefinition.reference) {
 					// In case of references
-					const namespace = propertyDefinition.namespace
-						? propertyDefinition.namespace()
-						: factory.namespace;
-					const typeName = propertyDefinition.reference.typeName;
+					// Recreate the entity / array of entity
+					const namespaceName =
+						propertyDefinition.namespace || factory.namespace.name;
+					const namespace =
+						factory.namespace.database.namespaces[namespaceName];
+					const typeName = propertyDefinition.reference;
 
 					if (propertyDefinition.multiple) {
 						entity.refs[name] = [];
@@ -231,6 +246,50 @@ export class EntityFactory {
 				writeValue(updValue);
 			},
 		});
+	}
+
+	createRelationship(entity, name, relationshipDefinition) {
+		switch (relationshipDefinition.kind) {
+			case "one-to-many":
+				// Name of the method
+				const functionName = "get" + name[0].toUpperCase() + name.slice(1);
+
+				// Retrieve the type name
+				const typeName = relationshipDefinition.typeName;
+
+				// Retrieve the right namespace
+				const namespaceName =
+					relationshipDefinition.namespace || this.namespace.name;
+
+				// Create the method
+				entity[functionName] = async function () {
+					// Define the query
+					const query = {};
+					query[relationshipDefinition.property] = this.id;
+
+					return await this.namespace.database.data[namespaceName][
+						typeName
+					].find(query);
+				};
+
+				// Create the index
+				const indexName =
+					name[0].toUpperCase() +
+					name.slice(1) +
+					"By" +
+					relationshipDefinition.property[0].toUpperCase() +
+					relationshipDefinition.property.slice(1);
+
+				this.namespace.database.data[namespaceName][typeName].defineIndex(
+					indexName,
+					[relationshipDefinition.property]
+				);
+
+				break;
+
+			default:
+				break;
+		}
 	}
 
 	/**
@@ -267,18 +326,17 @@ export class EntityFactory {
 			if (
 				value.constructor.name != "Entity" ||
 				!value.model ||
-				value.model.typeName != propertyDefinition.model.typeName
+				value.model.typeName != propertyDefinition.model
 			) {
-				throw new Error(
-					"Model mismatch, expected " + propertyDefinition.model.typeName
-				);
+				throw new Error("Model mismatch, expected " + propertyDefinition.model);
 			}
 
 			value.validate();
 		} else if (propertyDefinition.reference) {
 			// Value should be a reference
-			if (typeof value != "string")
+			if (typeof value != "string") {
 				throw new Error("Expected reference (string)");
+			}
 		} else {
 			// Static values
 

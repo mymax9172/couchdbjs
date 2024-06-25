@@ -52,4 +52,15 @@ export class DataService {
 			return null;
 		}
 	}
+
+	// Define an index
+	async defineIndex(name, fields) {
+		const indexDef = {
+			name: name,
+			ddoc: name,
+			index: { fields: fields },
+		};
+		const result = await this.namespace.database.nanoDb.createIndex(indexDef);
+		return result;
+	}
 }

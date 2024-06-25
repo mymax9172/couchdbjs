@@ -36,7 +36,7 @@ class ZipCodePropertyType extends PropertyType {
 }
 
 const model1 = {
-	typeName: "user",
+	typeName: "user1",
 	singleton: false,
 	properties: {
 		username: {},
@@ -47,7 +47,7 @@ const model1 = {
 };
 
 const model2 = {
-	typeName: "user",
+	typeName: "user2",
 	singleton: false,
 	properties: {
 		username: {},
@@ -141,11 +141,18 @@ const model6 = {
 	properties: {
 		address: {},
 		user: {
-			model: model4,
+			model: "user",
 		},
 		managers: {
-			model: model4,
+			model: "user",
 			multiple: true,
+		},
+	},
+	relationships: {
+		projects: {
+			typeName: "project",
+			property: "company",
+			kind: "one-to-many",
 		},
 	},
 };
@@ -155,7 +162,7 @@ const model7 = {
 	singleton: false,
 	properties: {
 		company: {
-			model: model6,
+			model: "company",
 		},
 	},
 };
@@ -165,10 +172,10 @@ const model8 = {
 	singleton: false,
 	properties: {
 		company: {
-			reference: model6,
+			reference: "company",
 		},
 		authors: {
-			reference: model4,
+			reference: "user",
 			multiple: true,
 		},
 	},
@@ -179,8 +186,13 @@ class DefaultNamespace extends Namespace {
 		super();
 
 		this.name = "default";
+		this.useModel(model1);
+		this.useModel(model2);
+		this.useModel(model3);
 		this.useModel(model4);
+		this.useModel(model5);
 		this.useModel(model6);
+		this.useModel(model7);
 		this.useModel(model8);
 	}
 }

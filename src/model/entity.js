@@ -93,13 +93,23 @@ export class Entity {
 			const value = this[propertyName];
 
 			if (propertyDefinition.multiple) {
-				// Validation of all elements
-				value.forEach((element) => {
-					factory.validatePropertyValue(element, this, propertyName);
-				});
+				if (value) {
+					// Validation of all elements
+					value.forEach((element) => {
+						const v = propertyDefinition.reference ? element.id : element;
+						factory.validatePropertyValue(v, this, propertyName);
+					});
+				} else {
+					factory.validatePropertyValue(value, this, propertyName);
+				}
 			} else {
 				// Validation of one element
-				factory.validatePropertyValue(value, this, propertyName);
+				if (value) {
+					const v = propertyDefinition.reference ? value.id : value;
+					factory.validatePropertyValue(v, this, propertyName);
+				} else {
+					factory.validatePropertyValue(value, this, propertyName);
+				}
 			}
 		});
 		return true;

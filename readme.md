@@ -452,7 +452,7 @@ export const {
 
 'readonly' can also be expressed as function (same rules seen in 'required')
 
-#### Hasing and Encyprion
+#### Hashing and Encyprion
 
 Sometime is required to hash a value (i.e. password). In this case the property hashed can support that.
 
@@ -506,9 +506,36 @@ export const {
 		}
 	}
 }
-
-
 ```
+
+#### Hooks
+There are two hooks for each property, beforeWrite and afterRead. beforeWrite allows to modify the value right before storing into the document (and then store it in the database). afterRead allows to modify the value just after reading the value from the inner document. These hooks are useful for any transformation (like formatting)
+
+`user-datamodel.js`
+
+```js
+export const {
+	typeName: "user",
+	singleton: false,
+	properties: {
+		username: {
+			required: true,
+		},
+		password: {
+			required: true,
+			hashed: true
+		},
+		age: {
+			encrypted: true,
+			afterRead(value) {
+				if (!value) return value;
+				return Number(value);
+			},
+		},
+	}
+}
+```
+In this example 
 
 [1]: https://npmjs.org
 [2]: https://github.com/apache/couchdb-nano/issues

@@ -1,49 +1,56 @@
+import { CouchServer } from "../src/couchServer.js";
 import { Entity } from "../src/model/entity.js";
-import { Namespace } from "../src/model/namespace.js";
-import models from "./sampleModels.js";
+import models, { ExampleDb } from "./sampleModels.js";
 
 import { should, expect } from "chai";
 should();
 
 describe("Entity class", function () {
-	var namespace;
+	// Url address
+	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
 
-	beforeEach(function () {
-		namespace = new Namespace();
-		namespace.name = "test";
+	// Create a server instance
+	const couchDB = new CouchServer(url);
+
+	// Test database
+	const dbName = "test2";
+	var namespace;
+	var db;
+
+	before(async function () {
+		// Check if the database exist, in case delete it
+		if (await couchDB.exists(dbName)) {
+			await couchDB.delete(dbName);
+		}
+
+		// Create test database
+		await couchDB.create(dbName);
+		db = couchDB.use(dbName, ExampleDb);
+		namespace = db.namespaces["default"];
 	});
 
 	after(async function () {});
 
-	it("Use of a model in a namespace", function () {
-		namespace.useModel(models.model1);
-		namespace.models.should.have.key(models.model1.typeName);
-	});
-
 	it("Use of static default property", function () {
 		const model = models.model1;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.should.have.property("password", "welcome1a");
 	});
 
 	it("Use of dynamic default property", function () {
 		const model = models.model2;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.should.have.property("password", "password");
 	});
 
 	it("Read a computed property", function () {
 		const model = models.model2;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.should.have.property("identifier", "pwd/password");
 	});
 
 	it("Use a PropertyType to capitilize texts", function () {
 		const model = models.model2;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.lastName = "Sullivan";
 		entity.should.have.property("lastName", "Doc. SULLIVAN");
@@ -51,14 +58,12 @@ describe("Entity class", function () {
 
 	it("Use a PropertyType to check format of a zipcode", function () {
 		const model = models.model3;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.zipCode = "20100";
 	});
 
 	it("Check a readonly property with rules in the property definition type", function () {
 		const model = models.model3;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.should.have.property("guid", "11111111");
 		expect(() => {
@@ -68,7 +73,6 @@ describe("Entity class", function () {
 
 	it("Check a property with rules", function () {
 		const model = models.model3;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		expect(() => {
 			entity.address = "main Street";
@@ -80,7 +84,6 @@ describe("Entity class", function () {
 
 	it("Check a required property", function () {
 		const model = models.model3;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		expect(() => {
 			entity.city = "Valid value";
@@ -101,7 +104,6 @@ describe("Entity class", function () {
 
 	it("Store a hashed password", function () {
 		const model = models.model4;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.should.have.property(
 			"password",
@@ -111,7 +113,6 @@ describe("Entity class", function () {
 
 	it("Write and read an encypted value", function () {
 		const model = models.model4;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.taxCode = "mdm76567";
 		entity.should.have.property("taxCode", "mdm76567");
@@ -119,7 +120,6 @@ describe("Entity class", function () {
 
 	it("Write and read an encypted integer value", function () {
 		const model = models.model4;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.age = 127;
 		entity.should.have.property("age", 127);
@@ -127,7 +127,6 @@ describe("Entity class", function () {
 
 	it("Write and read a number with enforced type check", function () {
 		const model = models.model5;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		expect(() => {
 			entity.balance = "acme";
@@ -153,7 +152,6 @@ describe("Entity class", function () {
 
 	it("Write and read an array of string", function () {
 		const model = models.model5;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		entity.should.have.property("addresses").that.has.lengthOf(0);
 		entity.addresses = ["Rome", "Milan"];
@@ -162,7 +160,6 @@ describe("Entity class", function () {
 
 	it("Write and read an array of string with numbers", function () {
 		const model = models.model5;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		expect(() => {
 			entity.addresses = [10, 20];
@@ -171,7 +168,6 @@ describe("Entity class", function () {
 
 	it("Use nested object", function () {
 		const model = models.model6;
-		namespace.useModel(model);
 		const entity = namespace.createEntity(model.typeName);
 		expect(() => {
 			entity.address = {
@@ -182,9 +178,6 @@ describe("Entity class", function () {
 	});
 
 	it("Use nested entity with a wrong type", function () {
-		namespace.useModel(models.model6);
-		namespace.useModel(models.model4);
-
 		const entity = namespace.createEntity(models.model6.typeName);
 		expect(() => {
 			entity.user = { name: "max" };
@@ -192,21 +185,15 @@ describe("Entity class", function () {
 	});
 
 	it("Use nested entity with a proper type", function () {
-		namespace.useModel(models.model6);
-		namespace.useModel(models.model4);
-
-		const entity = namespace.createEntity(models.model6.typeName);
-		const user = namespace.createEntity(models.model1.typeName);
+		const company = namespace.createEntity(models.model6.typeName);
+		const user = namespace.createEntity(models.model4.typeName);
 		expect(() => {
-			entity.user = user;
+			company.user = user;
 		}).not.to.throw();
-		entity.user.should.be.an.instanceof(Entity);
+		company.user.should.be.an.instanceof(Entity);
 	});
 
 	it("Manage nested property as array", function () {
-		namespace.useModel(models.model6);
-		namespace.useModel(models.model4);
-
 		const entity = namespace.createEntity(models.model6.typeName);
 		const users = [];
 		for (let i = 0; i < 5; i++) {
@@ -221,9 +208,6 @@ describe("Entity class", function () {
 	});
 
 	it("Control nested value in an array", function () {
-		namespace.useModel(models.model6);
-		namespace.useModel(models.model4);
-
 		const entity = namespace.createEntity(models.model6.typeName);
 		const users = [];
 		for (let i = 0; i < 5; i++) {
@@ -237,10 +221,6 @@ describe("Entity class", function () {
 	});
 
 	it("Deep hierarchy of entities", function () {
-		namespace.useModel(models.model4);
-		namespace.useModel(models.model6);
-		namespace.useModel(models.model7);
-		
 		const organization = namespace.createEntity(models.model7.typeName);
 		const company = namespace.createEntity(models.model6.typeName);
 		const managers = [];

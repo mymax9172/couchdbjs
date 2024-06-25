@@ -28,11 +28,12 @@ describe("References", function () {
 		namespace = db.namespaces["default"];
 	});
 
-	it("Empty reference for required one is not allowed", function () {
+	it("Empty reference allowed", function () {
 		const project = namespace.createEntity(models.model8.typeName);
+
 		expect(() => {
 			project.validate();
-		}).to.throw();
+		}).not.to.throw();
 	});
 
 	it("Check if everything but a reference is passed instead of a reference", function () {
@@ -65,6 +66,8 @@ describe("References", function () {
 		expect(() => {
 			project.company = company.id;
 		}).not.to.throw();
+		await project.save();
+
 		expect(project.company.$value()).to.be.null;
 		await project.company.$load();
 		expect(project.company.$value()).to.be.not.null;
@@ -82,5 +85,13 @@ describe("References", function () {
 		project.authors = users;
 		await project.authors[0].$load();
 		expect(project.authors[0].$value().id).to.equal(users[0]);
+	});
+
+	it("Check relationship", async function () {
+		const project = namespace.createEntity(models.model8.typeName);
+		await project.save();
+		const company = (await db.data.default.company.getAll())[0];
+		const projects = await company.getProjects();
+		projects.should.have.lengthOf(1);
 	});
 });

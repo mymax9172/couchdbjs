@@ -84,7 +84,7 @@ export class CollectionService extends DataService {
 
 			result = await this.namespace.database.nanoDb.find({
 				selector: {
-					_id: { $regex: this.typeName + "/" },
+					_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 					...query,
 				},
 				limit,
@@ -93,7 +93,7 @@ export class CollectionService extends DataService {
 		} else {
 			result = await this.namespace.database.nanoDb.find({
 				selector: {
-					_id: { $regex: this.typeName + "/" },
+					_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 					...query,
 				},
 			});
@@ -113,7 +113,7 @@ export class CollectionService extends DataService {
 	async findOne(query) {
 		const result = await this.namespace.database.nanoDb.find({
 			selector: {
-				_id: { $regex: this.typeName + "/" },
+				_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 				...query,
 			},
 			limit: 1,
@@ -130,7 +130,7 @@ export class CollectionService extends DataService {
 	async explain(query) {
 		return await this.namespace.database.nanoDb.explain({
 			selector: {
-				_id: { $regex: this.typeName + "/" },
+				_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 				...query,
 			},
 		});
