@@ -80,8 +80,8 @@ export class CouchServer {
 					namespaceSchema.models[model.typeName] = model;
 				});
 			});
+			
 			database.nanoDb.insert(schema);
-
 			return schema;
 		};
 
@@ -130,8 +130,7 @@ export class CouchServer {
 		checkMandatoryArgument("databaseClass", databaseClass);
 
 		const nanoDb = this.nanoServer.use(name);
-		const database = new databaseClass(nanoDb);
-
-		return database;
+		return new databaseClass(nanoDb);
 	}
+	
 }
