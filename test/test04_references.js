@@ -1,5 +1,5 @@
 import { CouchServer } from "../src/couchServer.js";
-import models, { ExampleDb } from "./sampleModels.js";
+import { ExampleDbSchema } from "./sampleModels.js";
 
 import { should, expect } from "chai";
 should();
@@ -9,7 +9,7 @@ describe("References", function () {
 	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
 
 	// Create a server instance
-	const couchDB = new CouchServer(url);
+	const server = new CouchServer(url);
 
 	// Test database
 	const dbName = "test";
@@ -18,18 +18,18 @@ describe("References", function () {
 
 	before(async function () {
 		// Check if the database exist, in case delete it
-		if (await couchDB.exists(dbName)) {
-			await couchDB.delete(dbName);
+		if (await server.exists(dbName)) {
+			await server.delete(dbName);
 		}
 
 		// Create test database
-		await couchDB.create(dbName, ExampleDb);
-		db = couchDB.use("test", ExampleDb);
+		await server.create(dbName, ExampleDbSchema);
+		db = await server.use(dbName);
 		namespace = db.namespaces["default"];
 	});
 
 	it("Empty reference allowed", function () {
-		const project = namespace.createEntity(models.model8.typeName);
+		const project = namespace.createEntity("project");
 
 		expect(() => {
 			project.validate();
@@ -37,8 +37,8 @@ describe("References", function () {
 	});
 
 	it("Check if everything but a reference is passed instead of a reference", function () {
-		const project = namespace.createEntity(models.model8.typeName);
-		const company = namespace.createEntity(models.model6.typeName);
+		const project = namespace.createEntity("project");
+		const company = namespace.createEntity("company");
 
 		expect(() => {
 			project.company = company;
@@ -58,8 +58,8 @@ describe("References", function () {
 	});
 
 	it("Check when a proper reference is passed", async function () {
-		const project = namespace.createEntity(models.model8.typeName);
-		const company = namespace.createEntity(models.model6.typeName);
+		const project = namespace.createEntity("project");
+		const company = namespace.createEntity("company");
 		company.address = "main street";
 		await company.save();
 
@@ -74,10 +74,10 @@ describe("References", function () {
 	});
 
 	it("Check array of references", async function () {
-		const project = namespace.createEntity(models.model8.typeName);
+		const project = namespace.createEntity("project");
 		const users = [];
 		for (let i = 0; i < 5; i++) {
-			const user = namespace.createEntity(models.model4.typeName);
+			const user = namespace.createEntity("user");
 			user.username = "user" + i;
 			await user.save();
 			users.push(user.id);
@@ -88,7 +88,7 @@ describe("References", function () {
 	});
 
 	it("Check relationship", async function () {
-		const project = namespace.createEntity(models.model8.typeName);
+		const project = namespace.createEntity("project");
 		await project.save();
 		const company = (await db.data.default.company.getAll())[0];
 		const projects = await company.getProjects();

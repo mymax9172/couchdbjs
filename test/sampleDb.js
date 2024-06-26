@@ -1,6 +1,3 @@
-import { CouchDatabase } from "../src/couchDatabase.js";
-import { Namespace } from "../src/model/namespace.js";
-
 const ownerModel = {
 	typeName: "owner",
 	singleton: true,
@@ -33,20 +30,10 @@ const userModel = {
 	},
 };
 
-class DefaultNamespace extends Namespace {
-	constructor() {
-		super();
+export const SampleDbSchema = {
+	version: 1,
 
-		this.name = "default";
-		this.useModel(ownerModel);
-		this.useModel(userModel);
-	}
-}
-
-export class SampleDb extends CouchDatabase {
-	constructor(nanoDb) {
-		super(nanoDb);
-
-		this.useNamespace(new DefaultNamespace());
-	}
-}
+	namespaces: {
+		default: [ownerModel, userModel],
+	},
+};

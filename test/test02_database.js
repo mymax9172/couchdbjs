@@ -1,5 +1,5 @@
 import { CouchServer } from "../src/couchServer.js";
-import { SampleDb } from "./sampleDb.js";
+import { SampleDbSchema } from "./sampleDb.js";
 
 import * as chai from "chai";
 chai.should();
@@ -7,23 +7,22 @@ chai.should();
 describe("Database class", function () {
 	// Url address
 	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
+
 	// Create a server instance
-	const couchDB = new CouchServer(url);
+	const server = new CouchServer(url);
+
 	// Test database
 	const dbName = "test";
 	var db;
+
 	before(async function () {
 		// Check if the database exist, in case delete it
-		if (await couchDB.exists(dbName)) {
-			await couchDB.delete(dbName);
+		if (await server.exists(dbName)) {
+			await server.delete(dbName);
 		}
 		// Create test database
-		await couchDB.create(dbName, SampleDb);
-		db = couchDB.use("test", SampleDb);
-	});
-	after(async function () {
-		// Remove test database
-		//await couchDB.delete(dbName);
+		await server.create(dbName, SampleDbSchema);
+		db = await server.use(dbName);
 	});
 
 	// Get database info
@@ -37,11 +36,9 @@ describe("Database class", function () {
 		const owner = db.data.default.owner.create();
 		owner.firstName = "Massimiliano";
 		owner.lastName = "Agostinoni";
-		owner
-			.export()
-			.should.be.a("object")
-			.have.property("_id")
-			.that.is.equal("default/owner");
+		owner.should.be
+			.a("object")
+			.have.property("fullName", "Massimiliano Agostinoni");
 	});
 
 	// Save a singleton entity
@@ -50,6 +47,7 @@ describe("Database class", function () {
 		owner.firstName = "Massimiliano";
 		owner.lastName = "Agostinoni";
 		const result = await owner.save();
+
 		result.should.be
 			.a("object")
 			.have.property("id")

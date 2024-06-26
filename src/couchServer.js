@@ -1,6 +1,7 @@
 import nano from "nano";
 import { CouchDatabase } from "./couchDatabase.js";
 import { checkMandatoryArgument } from "./helpers/tools.js";
+import { coding } from "./helpers/coding.js";
 import { Namespace } from "./model/namespace.js";
 
 /**
@@ -55,35 +56,12 @@ export class CouchServer {
 	/**
 	 * Create a new database in the server
 	 * @param {string} name Name of the database
-	 * @param {CouchDatabase} databaseClass Class of the database to be used
+	 * @param {JSON} schema Schema of the database
 	 */
-	async create(name, databaseClass) {
+	async create(name, schema) {
 		// Check mandatory arguments
 		checkMandatoryArgument("name", name);
-
-		// Create schema content
-		var createSchema = (databaseClass) => {
-			// Create an instance of the database
-			const database = this.use(name, databaseClass);
-			const schema = {
-				_id: "$/schema",
-				_rev: undefined,
-				namespaces: {},
-			};
-
-			Object.values(database.namespaces).forEach((namespace) => {
-				schema.namespaces[namespace.name] = {
-					models: {},
-				};
-				const namespaceSchema = schema.namespaces[namespace.name];
-				Object.values(namespace.models).forEach((model) => {
-					namespaceSchema.models[model.typeName] = model;
-				});
-			});
-			
-			database.nanoDb.insert(schema);
-			return schema;
-		};
+		checkMandatoryArgument("schema", schema);
 
 		let rule = "^[a-z][a-z0-9_$()+/-]*$";
 		const regEx = new RegExp(rule);
@@ -92,18 +70,25 @@ export class CouchServer {
 				// Create the CouchDB database
 				await this.nanoServer.db.create(name);
 
-				if (databaseClass) {
-					const schema = createSchema(databaseClass);
-					return {
-						ok: true,
-						schema,
-					};
-				} else return { ok: true };
+				// Connect to the new database
+				const nanoDb = this.nanoServer.use(name);
+
+				// Serialize the schema
+				const serializedSchema = coding.serialize(schema);
+				serializedSchema._id = "$/schema";
+
+				// Store the schema
+				await nanoDb.insert(serializedSchema);
+
+				return { ok: true };
 			} catch (error) {
-				return { ok: false };
+				return { ok: false, error: error };
 			}
 		} else {
-			throw new Error("Not allowed characters in the database name");
+			return {
+				ok: false,
+				error: "Not allowed characters in the database name",
+			};
 		}
 	}
 
@@ -121,16 +106,89 @@ export class CouchServer {
 	/**
 	 * Retrieve a database instance
 	 * @param {string} name Name of the database
-	 * @param {CouchDatabase} databaseClass Class of the database to be used
 	 * @returns {CouchDatabase} CouchDB database class
 	 */
-	use(name, databaseClass) {
+	async use(name) {
 		// Check mandatory arguments
 		checkMandatoryArgument("name", name);
-		checkMandatoryArgument("databaseClass", databaseClass);
 
+		// Connect to the database
 		const nanoDb = this.nanoServer.use(name);
-		return new databaseClass(nanoDb);
+
+		// Read the stored schema
+		const schema = await nanoDb.get("$/schema");
+
+		// Return the Database class
+		const database = new CouchDatabase(name, nanoDb);
+		database.importSchema(schema);
+		return database;
 	}
-	
+
+	async testSchema(name, databaseClass) {
+		const nanoDb = this.nanoServer.use(name);
+		const database = new CouchDatabase(nanoDb);
+
+		// Create schema content
+		var createSchema = (databaseClass) => {
+			// Create an instance of the database
+			const database = this.use(name, databaseClass);
+			const schema = {
+				_id: "$/schema",
+				_rev: undefined,
+				name: name,
+				namespaces: {},
+			};
+
+			Object.keys(database.namespaces).forEach((namespaceKey) => {
+				const namespace = database.namespaces[namespaceKey];
+				schema.namespaces[namespaceKey] = {};
+
+				Object.keys(namespace.models).forEach((modelKey) => {
+					const model = namespace.models[modelKey];
+					schema.namespaces[namespaceKey][modelKey] = model;
+				});
+			});
+			return schema;
+		};
+
+		// ImportSchema
+		var importSchema = (schema) => {
+			const database = this.use(name, CouchDatabase);
+
+			Object.keys(schema.namespaces).forEach((namespaceKey) => {
+				const namespaceDefinition = schema.namespaces[namespaceKey];
+				const namespace = new Namespace();
+				namespace.name = namespaceKey;
+
+				Object.keys(namespaceDefinition).forEach((modelKey) => {
+					const model = namespaceDefinition[modelKey];
+					namespace.name = namespaceKey;
+					namespace.useModel(model);
+				});
+
+				database.useNamespace(namespace);
+			});
+
+			return database;
+		};
+
+		const schema = createSchema(databaseClass);
+		const doc = coding.serialize(schema);
+		doc._id = "$/schema";
+		await database.nanoDb.insert(doc);
+		//console.dir(doc, { depth: null });
+
+		const doc2 = await database.nanoDb.get(doc._id);
+		const schema2 = coding.deserialize(doc2);
+		const database2 = importSchema(schema2);
+
+		//console.dir(database2, { depth: 3 });
+
+		const user2 = database2.data.default.user2.create();
+		console.log(user2.password);
+		// console.log(example2.method("ciao"));
+		// console.log(example2.default());
+		// console.log(example2.age());
+		// console.log(example2.score());
+	}
 }

@@ -1,41 +1,31 @@
-import { CouchDatabase } from "../src/couchDatabase.js";
-import { Namespace } from "../src/model/namespace.js";
+import { StandardTypes } from "../src/model/standardTypes.js";
 
-import { PropertyType } from "../src/model/propertyType.js";
-import { StandardTypes } from "../src/model/types/index.js";
-
-class CapitalizedPropertyType extends PropertyType {
-	constructor() {
-		super();
-		this.name = "CapitilizedText";
-	}
+const CapitalizedPropertyType = {
+	name: "CapitilizedText",
 
 	// Capitilize text before storing
 	beforeWrite(value) {
 		if (value != null && value.length > 0) return value.toUpperCase();
 		else return value;
-	}
+	},
 
 	// Add title after reading
 	afterRead(value) {
 		if (value != null && value.length > 0) return "Doc. " + value;
 		else return value;
-	}
-}
+	},
+};
 
-class ZipCodePropertyType extends PropertyType {
-	constructor() {
-		super();
-		this.name = "ZipcodeText";
+const ZipCodePropertyType = {
+	name: "ZipcodeText",
 
-		this.rules = [
-			(value) =>
-				/^[0-9]{5}$/.test(value) || value === "EE" || "Zip code is not correct",
-		];
-	}
-}
+	rules: [
+		(value) =>
+			/^[0-9]{5}$/.test(value) || value === "EE" || "Zip code is not correct",
+	],
+};
 
-const model1 = {
+const User1 = {
 	typeName: "user1",
 	singleton: false,
 	properties: {
@@ -46,7 +36,7 @@ const model1 = {
 	},
 };
 
-const model2 = {
+const User2 = {
 	typeName: "user2",
 	singleton: false,
 	properties: {
@@ -67,7 +57,7 @@ const model2 = {
 	},
 };
 
-const model3 = {
+const Contact = {
 	typeName: "contact",
 	singleton: false,
 	properties: {
@@ -76,9 +66,7 @@ const model3 = {
 		},
 		guid: {
 			// Using function
-			readonly(e) {
-				return true;
-			},
+			readonly: true,
 			default: "11111111",
 		},
 		address: {
@@ -90,7 +78,7 @@ const model3 = {
 	},
 };
 
-const model4 = {
+const User = {
 	typeName: "user",
 	singleton: false,
 	properties: {
@@ -112,7 +100,7 @@ const model4 = {
 	},
 };
 
-const model5 = {
+const House = {
 	typeName: "house",
 	singleton: false,
 	properties: {
@@ -135,7 +123,7 @@ const model5 = {
 	},
 };
 
-const model6 = {
+const Company = {
 	typeName: "company",
 	singleton: false,
 	properties: {
@@ -157,7 +145,7 @@ const model6 = {
 	},
 };
 
-const model7 = {
+const Organization = {
 	typeName: "organization",
 	singleton: false,
 	properties: {
@@ -167,7 +155,7 @@ const model7 = {
 	},
 };
 
-const model8 = {
+const Project = {
 	typeName: "project",
 	singleton: false,
 	properties: {
@@ -181,37 +169,19 @@ const model8 = {
 	},
 };
 
-class DefaultNamespace extends Namespace {
-	constructor() {
-		super();
+export const ExampleDbSchema = {
+	version: 1,
 
-		this.name = "default";
-		this.useModel(model1);
-		this.useModel(model2);
-		this.useModel(model3);
-		this.useModel(model4);
-		this.useModel(model5);
-		this.useModel(model6);
-		this.useModel(model7);
-		this.useModel(model8);
-	}
-}
-
-export class ExampleDb extends CouchDatabase {
-	constructor(nanoDb) {
-		super(nanoDb);
-
-		this.useNamespace(new DefaultNamespace());
-	}
-}
-
-export default {
-	model1,
-	model2,
-	model3,
-	model4,
-	model5,
-	model6,
-	model7,
-	model8,
+	namespaces: {
+		default: [
+			User1,
+			User2,
+			Contact,
+			User,
+			House,
+			Company,
+			Organization,
+			Project,
+		],
+	},
 };

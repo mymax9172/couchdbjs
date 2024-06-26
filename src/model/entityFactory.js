@@ -68,7 +68,7 @@ export class EntityFactory {
 				updatedValue = propertyDefinition.beforeWrite(updatedValue);
 
 			if (propertyDefinition.type) {
-				const propertyType = new propertyDefinition.type();
+				const propertyType = propertyDefinition.type;
 				if (propertyType.beforeWrite)
 					updatedValue = propertyType.beforeWrite(updatedValue);
 			}
@@ -96,7 +96,7 @@ export class EntityFactory {
 
 			// Check trasformations
 			if (propertyDefinition.type) {
-				const propertyType = new propertyDefinition.type();
+				const propertyType = propertyDefinition.type;
 				if (propertyType.afterRead)
 					updatedValue = propertyType.afterRead(updatedValue);
 			}
@@ -194,8 +194,6 @@ export class EntityFactory {
 						"Couldn't assign an array when multiple values are not allowed"
 					);
 				}
-
-				// Validation
 
 				// Check if multiple values
 				if (propertyDefinition.multiple) {
@@ -346,10 +344,13 @@ export class EntityFactory {
 
 			if (propertyDefinition.type) {
 				// Check property type rules
-				const propertyType = new propertyDefinition.type();
-				const result = propertyType.validate(value);
-				if (typeof result === "string")
-					throw new Error("Invalid value: " + result);
+				const propertyType = propertyDefinition.type;
+
+				if (propertyType.rules && propertyType.rules.length > 0) {
+					const result = validateRule(value, propertyType.rules, entity);
+					if (typeof result === "string")
+						throw new Error("Invalid value: " + result);
+				}
 			}
 
 			// Check property rules
@@ -371,7 +372,9 @@ export class EntityFactory {
 	parseEntity(document, namespace, typeName) {
 		const factory = new EntityFactory(namespace, typeName);
 		const entity = factory.create();
+
 		entity.import(document);
+
 		return entity;
 	}
 }

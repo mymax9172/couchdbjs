@@ -2,6 +2,7 @@ import { Namespace } from "./model/namespace.js";
 import { SingletonService } from "./services/singletonService.js";
 import { CollectionService } from "./services/collectionService.js";
 import { checkMandatoryArgument } from "./helpers/tools.js";
+import { coding } from "./helpers/coding.js";
 
 /**
  * Class for a CouchDB database
@@ -9,6 +10,12 @@ import { checkMandatoryArgument } from "./helpers/tools.js";
 export class CouchDatabase {
 	// Internal CouchDB database instance
 	nanoDb;
+
+	// Name of the database
+	name;
+
+	// Version of the database
+	version = 1;
 
 	// Namespaces
 	namespaces = {};
@@ -19,14 +26,48 @@ export class CouchDatabase {
 	/**
 	 * Create a new CouchDB database instance
 	 * Do not create this class, use method use from CouchServer class instead
-	 * @param {DocumentScope} nanoDb Document scope
+	 * @param {String} name Name of the database
+	 * @param {DocumentScope} nanoDb Document scope (Nano library)
 	 */
-	constructor(nanoDb) {
+	constructor(name, nanoDb) {
 		// Check mandatory arguments
+		checkMandatoryArgument("name", name);
 		checkMandatoryArgument("nanoDb", nanoDb);
 
-		// Store the CouchDB instance and namespaces
+		// Store the CouchDB instance
+		this.name = name;
 		this.nanoDb = nanoDb;
+	}
+
+	/**
+	 * Import schema definition
+	 * @param {Object} schema Schema definition
+	 */
+	importSchema(schema) {
+		// Check mandatory arguments
+		checkMandatoryArgument("schema", schema);
+
+		// Reset all
+		this.version = 1;
+		this.namespaces = {};
+		this.data = {};
+
+		// Check version
+		// ...
+
+		// Read the schema and setup the instance
+		Object.keys(schema.namespaces).forEach((namespaceKey) => {
+			const namespaceDefinition = schema.namespaces[namespaceKey];
+
+			const namespace = new Namespace();
+			namespace.name = namespaceKey;
+
+			namespaceDefinition.forEach((model) => {
+				namespace.useModel(coding.deserialize(model));
+			});
+
+			this.useNamespace(namespace);
+		});
 	}
 
 	/**

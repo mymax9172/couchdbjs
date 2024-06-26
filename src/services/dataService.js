@@ -32,7 +32,7 @@ export class DataService {
 		} catch (error) {
 			throw new Error(
 				"Validation error of type " +
-					this.typeName +
+					entity.model.typeName +
 					"(" +
 					entity +
 					"): " +
