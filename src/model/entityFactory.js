@@ -6,7 +6,7 @@ import {
 } from "../helpers/tools.js";
 import { security } from "../helpers/security.js";
 import { Namespace } from "./namespace.js";
-import { Reference, createReference } from "./reference.js";
+import { createReference } from "./reference.js";
 
 export class EntityFactory {
 	typeName;
@@ -19,6 +19,10 @@ export class EntityFactory {
 
 		this.namespace = namespace;
 		this.typeName = typeName;
+
+		// Setup security secret key
+		security.secretKey = this.namespace.database.server.config.secretKey;
+		console.log(security.secretKey);
 	}
 
 	/**

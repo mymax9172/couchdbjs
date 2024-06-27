@@ -11,6 +11,9 @@ export class CouchDatabase {
 	// Internal CouchDB database instance
 	nanoDb;
 
+	// CouchDB server
+	server;
+
 	// Name of the database
 	name;
 
@@ -28,15 +31,18 @@ export class CouchDatabase {
 	 * Do not create this class, use method use from CouchServer class instead
 	 * @param {String} name Name of the database
 	 * @param {DocumentScope} nanoDb Document scope (Nano library)
+	 * @param {CouchServer} server CouchDB server instance
 	 */
-	constructor(name, nanoDb) {
+	constructor(name, nanoDb, server) {
 		// Check mandatory arguments
 		checkMandatoryArgument("name", name);
 		checkMandatoryArgument("nanoDb", nanoDb);
+		checkMandatoryArgument("server", server);
 
 		// Store the CouchDB instance
 		this.name = name;
 		this.nanoDb = nanoDb;
+		this.server = server;
 	}
 
 	/**

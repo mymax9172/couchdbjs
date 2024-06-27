@@ -8,20 +8,33 @@ import { Namespace } from "./model/namespace.js";
  * Server class for a CouchDB server
  */
 export class CouchServer {
-	// Members
-	url; // Url address of the server
-	nanoServer; // Nano server
+	// Url address of the server
+	url;
+
+	// Nano server
+	nanoServer;
+
+	// Configuration
+	config = {
+		secretKey: "AGw89hDFFxz1",
+	};
 
 	/**
 	 * Create a new CouchDB server instance
 	 * @param {string} url URL address of the server (including protocoll and port)
+	 * @param {object} config Server configuration
 	 */
-	constructor(url) {
+	constructor(url, config) {
 		// Check mandatory arguments
 		checkMandatoryArgument("url", url);
 
 		// Store arguments
 		this.url = url;
+
+		// Configuration
+		if (config) {
+			if (config.secretKey) this.config.secretKey = config.secretKey;
+		}
 
 		// Create the server connection
 		this.nanoServer = nano(url);
@@ -119,76 +132,8 @@ export class CouchServer {
 		const schema = await nanoDb.get("$/schema");
 
 		// Return the Database class
-		const database = new CouchDatabase(name, nanoDb);
+		const database = new CouchDatabase(name, nanoDb, this);
 		database.importSchema(schema);
 		return database;
-	}
-
-	async testSchema(name, databaseClass) {
-		const nanoDb = this.nanoServer.use(name);
-		const database = new CouchDatabase(nanoDb);
-
-		// Create schema content
-		var createSchema = (databaseClass) => {
-			// Create an instance of the database
-			const database = this.use(name, databaseClass);
-			const schema = {
-				_id: "$/schema",
-				_rev: undefined,
-				name: name,
-				namespaces: {},
-			};
-
-			Object.keys(database.namespaces).forEach((namespaceKey) => {
-				const namespace = database.namespaces[namespaceKey];
-				schema.namespaces[namespaceKey] = {};
-
-				Object.keys(namespace.models).forEach((modelKey) => {
-					const model = namespace.models[modelKey];
-					schema.namespaces[namespaceKey][modelKey] = model;
-				});
-			});
-			return schema;
-		};
-
-		// ImportSchema
-		var importSchema = (schema) => {
-			const database = this.use(name, CouchDatabase);
-
-			Object.keys(schema.namespaces).forEach((namespaceKey) => {
-				const namespaceDefinition = schema.namespaces[namespaceKey];
-				const namespace = new Namespace();
-				namespace.name = namespaceKey;
-
-				Object.keys(namespaceDefinition).forEach((modelKey) => {
-					const model = namespaceDefinition[modelKey];
-					namespace.name = namespaceKey;
-					namespace.useModel(model);
-				});
-
-				database.useNamespace(namespace);
-			});
-
-			return database;
-		};
-
-		const schema = createSchema(databaseClass);
-		const doc = coding.serialize(schema);
-		doc._id = "$/schema";
-		await database.nanoDb.insert(doc);
-		//console.dir(doc, { depth: null });
-
-		const doc2 = await database.nanoDb.get(doc._id);
-		const schema2 = coding.deserialize(doc2);
-		const database2 = importSchema(schema2);
-
-		//console.dir(database2, { depth: 3 });
-
-		const user2 = database2.data.default.user2.create();
-		console.log(user2.password);
-		// console.log(example2.method("ciao"));
-		// console.log(example2.default());
-		// console.log(example2.age());
-		// console.log(example2.score());
 	}
 }
