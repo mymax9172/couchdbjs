@@ -1,4 +1,4 @@
-import { CouchServer } from "../src/couchServer.js";
+import { CouchServer } from "../src/database/couchServer.js";
 import { SampleDbSchema } from "./sampleDb.js";
 
 import * as chai from "chai";

@@ -22,7 +22,6 @@ export class EntityFactory {
 
 		// Setup security secret key
 		security.secretKey = this.namespace.database.server.config.secretKey;
-		console.log(security.secretKey);
 	}
 
 	/**

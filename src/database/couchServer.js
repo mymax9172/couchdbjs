@@ -1,8 +1,8 @@
 import nano from "nano";
 import { CouchDatabase } from "./couchDatabase.js";
-import { checkMandatoryArgument } from "./helpers/tools.js";
-import { coding } from "./helpers/coding.js";
-import { Namespace } from "./model/namespace.js";
+import { checkMandatoryArgument } from "../helpers/tools.js";
+import { coding } from "../helpers/coding.js";
+import { Namespace } from "../model/namespace.js";
 
 /**
  * Server class for a CouchDB server
@@ -89,9 +89,24 @@ export class CouchServer {
 				// Serialize the schema
 				const serializedSchema = coding.serialize(schema);
 				serializedSchema._id = "$/schema";
+				if (!serializedSchema.hasOwnProperty("version"))
+					serializedSchema.version = 1;
 
 				// Store the schema
 				await nanoDb.insert(serializedSchema);
+
+				// Initialize migrations
+				const migrations = {
+					_id: "$/migrations",
+					log: [
+						{
+							when: Date.now(),
+							type: "init",
+							version: 1,
+						},
+					],
+				};
+				await nanoDb.insert(migrations);
 
 				return { ok: true };
 			} catch (error) {
@@ -136,4 +151,11 @@ export class CouchServer {
 		database.importSchema(schema);
 		return database;
 	}
+
+	/**
+	 * Migrate a database to a new version
+	 * @param {String} name Name of the database
+	 * @returns {Migration} Migration details
+	 */
+	async migrate(name, migration) {}
 }

@@ -65,6 +65,21 @@ const couchDB = new CouchServer(url);
 const info = await couchDB.getInfo();
 ```
 
+It is also possible to provide some configuration to your server like for example the encryption secret key
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>:5984";
+const couchDB = new CouchServer(url, {
+	secretKey: "abcdefgh6747",
+});
+
+// Get info about the server
+const info = await couchDB.getInfo();
+```
+
 ### Discover existing databases
 
 There is a specific method to get all database names from the server
@@ -519,9 +534,9 @@ const Contact = {
 ```
 
 In this example address must ends with one of the three words, if check fails a string message will be reported.
-Rules is an array, so multiple rules can be defined (will be applied one by one, if one fails, validation fails as well). 
+Rules is an array, so multiple rules can be defined (will be applied one by one, if one fails, validation fails as well).
 
-Rules are applied during the execution of the setter and once again before saving in the database. 
+Rules are applied during the execution of the setter and once again before saving in the database.
 
 ### Property type
 
@@ -565,9 +580,11 @@ const person = {
 	},
 };
 ```
+
 ### Value lifecycle
 
 #### Getter
+
 When you get a value the following flow is executed:
 
 - if is a computed, execute the computed() methods adn exits
@@ -579,6 +596,7 @@ When you get a value the following flow is executed:
 - return the final value
 
 #### Setter
+
 When you set a new value, the following flow is executed:
 
 - if it is a computer or readonly value, it fails
@@ -590,10 +608,6 @@ When you set a new value, the following flow is executed:
 - if it is hashed, hashes the value
 - if it is encrypted, encrypts the value
 - write the value in the inner document
-
-
-
-
 
 [1]: https://npmjs.org
 [2]: https://github.com/apache/couchdb-nano/issues

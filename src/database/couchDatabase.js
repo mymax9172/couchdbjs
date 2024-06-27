@@ -1,8 +1,8 @@
-import { Namespace } from "./model/namespace.js";
-import { SingletonService } from "./services/singletonService.js";
-import { CollectionService } from "./services/collectionService.js";
-import { checkMandatoryArgument } from "./helpers/tools.js";
-import { coding } from "./helpers/coding.js";
+import { Namespace } from "../model/namespace.js";
+import { SingletonService } from "../services/singletonService.js";
+import { CollectionService } from "../services/collectionService.js";
+import { checkMandatoryArgument } from "../helpers/tools.js";
+import { coding } from "../helpers/coding.js";
 
 /**
  * Class for a CouchDB database
@@ -54,12 +54,9 @@ export class CouchDatabase {
 		checkMandatoryArgument("schema", schema);
 
 		// Reset all
-		this.version = 1;
+		this.version = schema.version;
 		this.namespaces = {};
 		this.data = {};
-
-		// Check version
-		// ...
 
 		// Read the schema and setup the instance
 		Object.keys(schema.namespaces).forEach((namespaceKey) => {
@@ -130,5 +127,13 @@ export class CouchDatabase {
 	 */
 	getInfo() {
 		return this.nanoDb.info();
+	}
+
+	/**
+	 * Read the schema from the database
+	 * @returns {object} Schema definition
+	 */
+	async getSchema() {
+		await this.nanoDb.get("$/schema");
 	}
 }
