@@ -8,6 +8,9 @@ export const Model = {
 	// Properties
 	properties: {
 		name: {
+			// Short description of the field
+			description: "abstract of the fiels",
+
 			// (optional) Default value, could be a static value or a function
 			default: "something",
 			default() {
@@ -68,6 +71,24 @@ export const Model = {
 	// Relationships
 	relationships: {},
 
+	// Attachments
+	attachments: {
+		// Named attachment
+		contract: {
+			filters: ["application/pdf"], // Limit in terms of mime types
+			size: 1000, // Limit in terms of size (kb)
+			compress: true, // File compressed before saved
+			multiple: false, // True if multiple file are accepted
+		},
+
+		// Repository of unnamed files (remove if not available)
+		"*": {
+			filters: ["application/pdf"], // Limit in terms of mime types
+			size: 1000, // Limit in terms of size (kb) for each annex
+			compress: true, // File compressed before saved
+			limit: 1, // Number of annexes allowed (remove for unlimited)
+		},
+	},
 	// Indexes
 	indexes: [],
 };

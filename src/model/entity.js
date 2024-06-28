@@ -14,6 +14,9 @@ export class Entity {
 	// Referenced entities
 	refs = {};
 
+	// Attachment
+	attachments = {};
+
 	/**
 	 * Create a new entity
 	 * Do not call this method directly, use createEntity method in namespace
@@ -130,7 +133,23 @@ export class Entity {
 	 * @returns {JSON} Json document to be saved in the CouchDB
 	 */
 	export() {
-		return this.document;
+		// Parse the inner document
+		const document = JSON.parse(JSON.stringify(this.document));
+
+		// Create attachments
+		// Object.keys(this.attachments).forEach((name) => {
+		// 	const attachment = this.attachments[name];
+
+		// 	if (!attachment.multiple) {
+		// 		const fileContent = attachment.get();
+		// 		document._attachments[fileContent.filename] = {
+		// 			content_type: fileContent.contentType,
+		// 			data: fileContent.data,
+		// 		};
+		// 	}
+		// });
+
+		return document;
 	}
 
 	/**

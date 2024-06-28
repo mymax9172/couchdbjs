@@ -1,3 +1,4 @@
+import { Attachment } from "../model/attachment.js";
 import { DataService } from "./dataService.js";
 
 export class CollectionService extends DataService {
@@ -5,8 +6,13 @@ export class CollectionService extends DataService {
 		try {
 			// Read the document
 			const doc = await this.namespace.database.nanoDb.get(id, {
-				revs_info: false,
+				//revs_info: true,
+				attachments: true,
 			});
+
+			// if (id.startsWith("default/contract")) {
+			// 	console.log(doc);
+			// }
 
 			// Trasform into an entity
 			const entity = this.namespace.createEntity(this.typeName);

@@ -7,6 +7,7 @@ import {
 import { security } from "../helpers/security.js";
 import { Namespace } from "./namespace.js";
 import { createReference } from "./reference.js";
+import { Attachment } from "./attachment.js";
 
 export class EntityFactory {
 	typeName;
@@ -52,6 +53,14 @@ export class EntityFactory {
 			});
 		}
 
+		// Create attachments
+		if (model.attachments) {
+			Object.keys(model.attachments).forEach((attachmentName) => {
+				const attachmenteDefinition = model.attachments[attachmentName];
+				this.createAttachment(entity, attachmentName, attachmenteDefinition);
+			});
+		}
+
 		// return the entity
 		return entity;
 	}
@@ -59,6 +68,7 @@ export class EntityFactory {
 	// Create a new property
 	createProperty(entity, name, propertyDefinition) {
 		// Check mandatory arguments
+		checkMandatoryArgument("entity", entity);
 		checkMandatoryArgument("name", name);
 		checkMandatoryArgument("propertyDefinition", propertyDefinition);
 
@@ -249,7 +259,13 @@ export class EntityFactory {
 		});
 	}
 
+	// Create a relationship
 	createRelationship(entity, name, relationshipDefinition) {
+		// Check mandatory arguments
+		checkMandatoryArgument("entity", entity);
+		checkMandatoryArgument("name", name);
+		checkMandatoryArgument("relationshipDefinition", relationshipDefinition);
+
 		switch (relationshipDefinition.kind) {
 			case "one-to-many":
 				// Name of the method
@@ -290,6 +306,33 @@ export class EntityFactory {
 
 			default:
 				break;
+		}
+	}
+
+	// Create an attachment
+	createAttachment(entity, name, attachmentDefinition) {
+		// Check mandatory arguments
+		checkMandatoryArgument("entity", entity);
+		checkMandatoryArgument("name", name);
+		checkMandatoryArgument("attachmentDefinition", attachmentDefinition);
+
+		if (name != "*") {
+			// Create an attachment object
+			const att = new Attachment(name, entity);
+			att.compress = attachmentDefinition.compress || false;
+			att.size = attachmentDefinition.size || 0;
+			att.filters = attachmentDefinition.filters || [];
+			att.multiple = attachmentDefinition.multiple || false;
+
+			entity.attachments[name] = att;
+
+			// Define getters and setters
+			Object.defineProperty(entity, name, {
+				// Getter
+				get() {
+					return entity.attachments[name];
+				},
+			});
 		}
 	}
 

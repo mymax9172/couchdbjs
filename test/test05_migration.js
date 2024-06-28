@@ -34,12 +34,37 @@ class Migration1to2 extends Migration {
 	}
 }
 
+class Migration1to1 extends Migration {
+	constructor(database) {
+		super(database);
+
+		this.fromVersion = 1;
+		this.toVersion = 1;
+	}
+
+	async onUpgrade() {
+		const actions = [];
+
+		const result = await this.changeProperty(
+			"default",
+			"user",
+			"lastName",
+			(e) => e + " changed"
+		);
+		if (result.error) throw new Error(result.error);
+		else actions.push(result);
+
+		return actions;
+	}
+}
+
 const userModel = {
 	typeName: "user",
 	singleton: false,
 	properties: {
 		firstName: {},
 		lastName: {},
+		score: {},
 		fullName: {
 			computed() {
 				return this.firstName + " " + this.lastName;
@@ -100,5 +125,11 @@ describe("Migrations", function () {
 	it("Downgrade to version 1", async function () {
 		const migration = new Migration1to2(db);
 		await migration.down(SampleDbSchema);
+	});
+
+	// Massive modification
+	it("Update data without changing version", async function () {
+		const migration = new Migration1to1(db);
+		await migration.up();
 	});
 });

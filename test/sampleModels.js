@@ -169,6 +169,20 @@ const Project = {
 	},
 };
 
+const Contract = {
+	typeName: "contract",
+	singleton: false,
+	properties: {
+		customer: {},
+	},
+	attachments: {
+		legalDocument: {
+			filters: ["text/plain"], // Limit in terms of mime types
+			size: 1000, // Limit in terms of size (kb)
+		},
+	},
+};
+
 export const ExampleDbSchema = {
 	version: 1,
 
@@ -182,6 +196,7 @@ export const ExampleDbSchema = {
 			Company,
 			Organization,
 			Project,
+			Contract,
 		],
 	},
 };

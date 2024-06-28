@@ -23,7 +23,7 @@ export class Migration {
 				"Current version is not the right target for this migration"
 			);
 
-		if (schema.version != this.toVersion)
+		if (schema && schema.version != this.toVersion)
 			throw new Error(
 				"This schema has a different version from target version of this migration"
 			);
@@ -43,15 +43,17 @@ export class Migration {
 			});
 			await this.database.nanoDb.insert(migrationDoc);
 
-			// Update schema
-			const serializedSchema = coding.serialize(schema);
-			const schemaDoc = await this.database.nanoDb.get("$/schema");
-			schemaDoc.version = this.toVersion;
-			schemaDoc.namespaces = serializedSchema.namespaces;
-			await this.database.nanoDb.insert(schemaDoc);
+			if (schema) {
+				// Update schema
+				const serializedSchema = coding.serialize(schema);
+				const schemaDoc = await this.database.nanoDb.get("$/schema");
+				schemaDoc.version = this.toVersion;
+				schemaDoc.namespaces = serializedSchema.namespaces;
+				await this.database.nanoDb.insert(schemaDoc);
 
-			// Reimport the new schema
-			this.database.importSchema(schema);
+				// Reimport the new schema
+				this.database.importSchema(schema);
+			}
 		} catch (error) {
 			throw new Error(error);
 		}
@@ -66,7 +68,7 @@ export class Migration {
 				"Current version is not the right target for this migration"
 			);
 
-		if (schema.version != this.fromVersion)
+		if (schema && schema.version != this.fromVersion)
 			throw new Error(
 				"This schema has a different version from target version of this migration"
 			);
@@ -86,22 +88,28 @@ export class Migration {
 			});
 			await this.database.nanoDb.insert(migrationDoc);
 
-			// Update schema
-			const serializedSchema = coding.serialize(schema);
-			const schemaDoc = await this.database.nanoDb.get("$/schema");
-			schemaDoc.version = this.fromVersion;
-			schemaDoc.namespaces = serializedSchema.namespaces;
-			await this.database.nanoDb.insert(schemaDoc);
+			if (schema) {
+				// Update schema
+				const serializedSchema = coding.serialize(schema);
+				const schemaDoc = await this.database.nanoDb.get("$/schema");
+				schemaDoc.version = this.fromVersion;
+				schemaDoc.namespaces = serializedSchema.namespaces;
+				await this.database.nanoDb.insert(schemaDoc);
 
-			// Reimport the new schema
-			this.database.importSchema(schema);
+				// Reimport the new schema
+				this.database.importSchema(schema);
+			}
 		} catch (error) {
 			throw new Error(error);
 		}
 	}
 
-	async onUpgrade() {}
-	async onDowngrade() {}
+	async onUpgrade() {
+		throw new Error("Upgrade not implemented");
+	}
+	async onDowngrade() {
+		throw new Error("Downgrade not implemented");
+	}
 
 	/**
 	 * List all documents of a specific type
@@ -131,7 +139,7 @@ export class Migration {
 			}
 
 			// Bulk save
-			const response = await this.database.nanoDb.bulk({ docs: documents });
+			await this.database.nanoDb.bulk({ docs: documents });
 
 			// Return migration action
 			return {
@@ -152,7 +160,7 @@ export class Migration {
 		}
 	}
 
-	// Add a property
+	// Remove a property
 	async removeProperty(namespaceName, typeName, propertyName) {
 		try {
 			// Get documents
@@ -165,11 +173,43 @@ export class Migration {
 			}
 
 			// Bulk save
-			const response = await this.database.nanoDb.bulk({ docs: documents });
+			await this.database.nanoDb.bulk({ docs: documents });
 
 			// Return migration action
 			return {
 				action: "remove-property",
+				payload: {
+					namespace: namespaceName,
+					type: typeName,
+					property: propertyName,
+				},
+				when: Date.now(),
+				docs: documents.length,
+			};
+		} catch (error) {
+			return {
+				error: error,
+			};
+		}
+	}
+
+	async changeProperty(namespaceName, typeName, propertyName, callback) {
+		try {
+			// Get documents
+			const documents = await this.list(namespaceName, typeName);
+
+			// Transform them
+			for (let i = 0; i < documents.length; i++) {
+				const document = documents[i];
+				document[propertyName] = callback(document[propertyName]);
+			}
+
+			// Bulk save
+			await this.database.nanoDb.bulk({ docs: documents });
+
+			// Return migration action
+			return {
+				action: "change-property",
 				payload: {
 					namespace: namespaceName,
 					type: typeName,
