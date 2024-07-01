@@ -178,7 +178,13 @@ const Contract = {
 	attachments: {
 		legalDocument: {
 			filters: ["text/plain"], // Limit in terms of mime types
-			size: 1000, // Limit in terms of size (kb)
+		},
+		annexes: {
+			multiple: true,
+			limit: 2,
+		},
+		tiny: {
+			size: 0.01, // Limit in terms of size (kb)
 		},
 	},
 };

@@ -73,20 +73,13 @@ export const Model = {
 
 	// Attachments
 	attachments: {
-		// Named attachment
+		// Named attachment (can be read by contract property on entity)
 		contract: {
 			filters: ["application/pdf"], // Limit in terms of mime types
 			size: 1000, // Limit in terms of size (kb)
 			compress: true, // File compressed before saved
 			multiple: false, // True if multiple file are accepted
-		},
-
-		// Repository of unnamed files (remove if not available)
-		"*": {
-			filters: ["application/pdf"], // Limit in terms of mime types
-			size: 1000, // Limit in terms of size (kb) for each annex
-			compress: true, // File compressed before saved
-			limit: 1, // Number of annexes allowed (remove for unlimited)
+			limit: 1, // If multiple define how many files are accepted
 		},
 	},
 	// Indexes

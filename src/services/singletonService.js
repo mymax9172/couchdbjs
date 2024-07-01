@@ -6,8 +6,8 @@ export class SingletonService extends DataService {
 
 		try {
 			// Read the document
-			const doc = await this.namespace.database.nanoDb.get(id, {
-				revs_info: false,
+			const doc = await this.namespace.database.pouchDb.get(id, {
+				revs_info: true,
 			});
 
 			// Trasform into an entity
@@ -20,17 +20,10 @@ export class SingletonService extends DataService {
 		}
 	}
 
-	async exists() {
-		const id = this.namespace.name + "/" + this.typeName;
-
-		const headers = await this.namespace.database.nanoDb.head(id);
-		return headers.statusCode === 200;
-	}
-
 	async delete() {
 		const entity = await this.get();
 		if (entity != null)
-			return await this.namespace.database.nanoDb.destroy(
+			return await this.namespace.database.pouchDb.remove(
 				entity.id,
 				entity.rev
 			);

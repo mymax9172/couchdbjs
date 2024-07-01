@@ -14,9 +14,6 @@ export class Entity {
 	// Referenced entities
 	refs = {};
 
-	// Attachment
-	attachments = {};
-
 	/**
 	 * Create a new entity
 	 * Do not call this method directly, use createEntity method in namespace
@@ -124,8 +121,26 @@ export class Entity {
 	 */
 	import(doc) {
 		Object.keys(doc).forEach((key) => {
-			this.document[key] = doc[key];
+			// Discard attachments
+			if (key != "_attachments") this.document[key] = doc[key];
 		});
+
+		// Read all attachment stubs
+		if (doc._attachments) {
+			const attNames = Object.keys(doc._attachments);
+			attNames.forEach((attName) => {
+				// Retrieve the attachment name and filename
+				const name = attName.split("|")[0];
+				const filename = attName.split("|")[1];
+				const contentType = doc._attachments[attName].content_type;
+
+				// Get the attachment object
+				const attachment = this[name];
+
+				// Define the stub
+				attachment.defineStub(filename, contentType);
+			});
+		}
 	}
 
 	/**
@@ -133,21 +148,28 @@ export class Entity {
 	 * @returns {JSON} Json document to be saved in the CouchDB
 	 */
 	export() {
-		// Parse the inner document
-		const document = JSON.parse(JSON.stringify(this.document));
+		// Parse the inner document (without _attachment property)
+		const document = JSON.parse(
+			JSON.stringify(this.document, (key, value) => {
+				if (key === "_attachments") return undefined;
+				else return value;
+			})
+		);
 
-		// Create attachments
-		// Object.keys(this.attachments).forEach((name) => {
-		// 	const attachment = this.attachments[name];
+		if (this.document.hasOwnProperty("_attachments")) {
+			document._attachments = {};
+			// Create attachments
+			Object.keys(this.document._attachments).forEach((attName) => {
+				const attachment = this.document._attachments[attName];
 
-		// 	if (!attachment.multiple) {
-		// 		const fileContent = attachment.get();
-		// 		document._attachments[fileContent.filename] = {
-		// 			content_type: fileContent.contentType,
-		// 			data: fileContent.data,
-		// 		};
-		// 	}
-		// });
+				attachment.files.forEach((file) => {
+					document._attachments[attName + "|" + file.filename] = {
+						content_type: file.contentType,
+						data: file.data,
+					};
+				});
+			});
+		}
 
 		return document;
 	}

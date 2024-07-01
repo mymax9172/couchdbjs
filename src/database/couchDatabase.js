@@ -8,8 +8,8 @@ import { coding } from "../helpers/coding.js";
  * Class for a CouchDB database
  */
 export class CouchDatabase {
-	// Internal CouchDB database instance
-	nanoDb;
+	// Internal PouchDB database instance
+	pouchDb;
 
 	// CouchDB server
 	server;
@@ -30,18 +30,18 @@ export class CouchDatabase {
 	 * Create a new CouchDB database instance
 	 * Do not create this class, use method use from CouchServer class instead
 	 * @param {String} name Name of the database
-	 * @param {DocumentScope} nanoDb Document scope (Nano library)
+	 * @param {PouchDB} pouchDb PouchDB reference
 	 * @param {CouchServer} server CouchDB server instance
 	 */
-	constructor(name, nanoDb, server) {
+	constructor(name, pouchDb, server) {
 		// Check mandatory arguments
 		checkMandatoryArgument("name", name);
-		checkMandatoryArgument("nanoDb", nanoDb);
+		checkMandatoryArgument("pouchDb", pouchDb);
 		checkMandatoryArgument("server", server);
 
 		// Store the CouchDB instance
 		this.name = name;
-		this.nanoDb = nanoDb;
+		this.pouchDb = pouchDb;
 		this.server = server;
 	}
 
@@ -123,17 +123,17 @@ export class CouchDatabase {
 
 	/**
 	 * Provide info about the database
-	 * @returns {Promise<object>} Info about the database
+	 * @returns {Promise<JSON>} Info about the database
 	 */
-	getInfo() {
-		return this.nanoDb.info();
+	async getInfo() {
+		return await this.pouchDb.info();
 	}
 
 	/**
 	 * Read the schema from the database
-	 * @returns {object} Schema definition
+	 * @returns {Promise<JSON>} Schema definition
 	 */
 	async getSchema() {
-		await this.nanoDb.get("$/schema");
+		await this.pouchDb.get("$/schema");
 	}
 }

@@ -21,9 +21,9 @@ export class DataService {
 		return this.namespace.createEntity(this.typeName);
 	}
 
-	async getAttachment(docId, attachmentName) {
-		return await this.database.attachment.get(docId, attachmentName);
-	}
+	// async getAttachment(docId, attachmentName) {
+	// 	return await this.database.attachment.get(docId, attachmentName);
+	// }
 
 	async save(entity) {
 		// Validation
@@ -43,33 +43,9 @@ export class DataService {
 		try {
 			// Save it
 			const json = entity.export();
-			console.log("***", json);
 
-			if (json._attachments["text.txt"]) {
-				json._attachments["text2.txt"] = json._attachments["text.txt"];
-			}
-
-			const result = await this.namespace.database.nanoDb.insert(json);
+			const result = await this.namespace.database.pouchDb.put(json);
 			if (result.ok) entity.document._rev = result.rev;
-
-			// Save attachments
-			const attNames = Object.keys(entity.attachments);
-			for (let index = 0; index < attNames.length; index++) {
-				const attachment = entity.attachments[attNames[index]];
-
-				for (let i = 0; i < attachment.files.length; i++) {
-					const fileContent = attachment.files[i];
-
-					const result = await this.namespace.database.nanoDb.attachment.insert(
-						entity.id,
-						fileContent.filename,
-						fileContent.data,
-						fileContent.contentType,
-						{ rev: entity.rev }
-					);
-					if (result.ok) entity.document._rev = result.rev;
-				}
-			}
 
 			return result;
 		} catch (error) {
@@ -83,9 +59,9 @@ export class DataService {
 		const indexDef = {
 			name: name,
 			ddoc: name,
-			index: { fields: fields },
+			fields: [...fields],
 		};
-		const result = await this.namespace.database.nanoDb.createIndex(indexDef);
+		const result = await this.namespace.database.pouchDb.createIndex(indexDef);
 		return result;
 	}
 }

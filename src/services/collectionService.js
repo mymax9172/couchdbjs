@@ -5,9 +5,9 @@ export class CollectionService extends DataService {
 	async get(id) {
 		try {
 			// Read the document
-			const doc = await this.namespace.database.nanoDb.get(id, {
-				//revs_info: true,
-				attachments: true,
+			const doc = await this.namespace.database.pouchDb.get(id, {
+				revs_info: true,
+				//attachments: true,
 			});
 
 			// if (id.startsWith("default/contract")) {
@@ -24,14 +24,9 @@ export class CollectionService extends DataService {
 		}
 	}
 
-	async exists(id) {
-		const headers = await this.namespace.database.nanoDb.head(id);
-		return headers.statusCode === 200;
-	}
-
 	async getAll() {
 		try {
-			var result = await this.namespace.database.nanoDb.list({
+			var result = await this.namespace.database.pouchDb.allDocs({
 				include_docs: true,
 				startkey: this.namespace.name + "/" + this.typeName + "/",
 				endkey: this.namespace.name + "/" + this.typeName + "/\ufff0",
@@ -51,7 +46,8 @@ export class CollectionService extends DataService {
 
 	async getSome(ids) {
 		try {
-			var result = await this.namespace.database.nanoDb.fetch({
+			var result = await this.namespace.database.pouchDb.allDocs({
+				include_docs: true,
 				keys: ids,
 			});
 
@@ -71,7 +67,7 @@ export class CollectionService extends DataService {
 	async delete(id) {
 		const entity = await this.get(id);
 		if (entity != null)
-			return await this.namespace.database.nanoDb.destroy(
+			return await this.namespace.database.pouchDb.remove(
 				entity.id,
 				entity.rev
 			);
@@ -88,7 +84,7 @@ export class CollectionService extends DataService {
 			page = pagination.page || 0;
 			skip = page * limit;
 
-			result = await this.namespace.database.nanoDb.find({
+			result = await this.namespace.database.pouchDb.find({
 				selector: {
 					_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 					...query,
@@ -97,7 +93,7 @@ export class CollectionService extends DataService {
 				skip,
 			});
 		} else {
-			result = await this.namespace.database.nanoDb.find({
+			result = await this.namespace.database.pouchDb.find({
 				selector: {
 					_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 					...query,
@@ -117,7 +113,7 @@ export class CollectionService extends DataService {
 	}
 
 	async findOne(query) {
-		const result = await this.namespace.database.nanoDb.find({
+		const result = await this.namespace.database.pouchDb.find({
 			selector: {
 				_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 				...query,
@@ -134,7 +130,7 @@ export class CollectionService extends DataService {
 	}
 
 	async explain(query) {
-		return await this.namespace.database.nanoDb.explain({
+		return await this.namespace.database.pouchDb.explain({
 			selector: {
 				_id: { $regex: this.namespace.name + "/" + this.typeName + "/" },
 				...query,

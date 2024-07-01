@@ -6,11 +6,16 @@ import { should, expect } from "chai";
 should();
 
 describe("Attachments", function () {
-	// Url address
-	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
+	// Server
+	const url = "http://85.234.131.99";
+	const port = 5984;
 
 	// Create a server instance
-	const server = new CouchServer(url);
+	const server = new CouchServer(url, port, {
+		username: "admin",
+		password: "E-digit_26APAlfa!",
+		token: "Basic YWRtaW46RS1kaWdpdF8yNkFQQWxmYSE=",
+	});
 
 	// Test database
 	const dbName = "test";
@@ -33,13 +38,44 @@ describe("Attachments", function () {
 	it("Create a single attachment", async function () {
 		const contract = db.data.default.contract.create();
 		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
-		contract.legalDocument.attach("text.txt", "text/plain", data);
+		contract.legalDocument.add("text.txt", "text/plain", btoa(data));
 		await contract.save();
 		id = contract.id;
 	});
 
 	it("Read a single attachment", async function () {
 		const contract = await db.data.default.contract.get(id);
+		const file = contract.legalDocument.files[0];
+		const data = await file.getData();
+		fs.writeFileSync("./test/assetts/text2.txt", data);
 		await contract.save();
+	});
+
+	it("Save multiple attachments", async function () {
+		const contract = db.data.default.contract.create();
+		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
+		contract.annexes.add("text.txt", "text/plain", btoa(data));
+		contract.annexes.add("text2.txt", "text/plain", btoa(data));
+		await contract.save();
+	});
+
+	it("Check limits in multiple attachments", async function () {
+		const contract = db.data.default.contract.create();
+		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
+		contract.annexes.add("text.txt", "text/plain", btoa(data));
+		contract.annexes.add("text2.txt", "text/plain", btoa(data));
+
+		expect(() => {
+			contract.annexes.add("text3.txt", "text/plain", btoa(data));
+		}).to.throw();
+	});
+
+	it("Check size limit", async function () {
+		const contract = db.data.default.contract.create();
+		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
+
+		expect(() => {
+			contract.tiny.add("text.txt", "text/plain", btoa(data));
+		}).to.throw();
 	});
 });

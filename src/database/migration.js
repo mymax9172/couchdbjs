@@ -33,7 +33,7 @@ export class Migration {
 			const actions = await this.onUpgrade();
 
 			// Get migration document (or create a new one)
-			const migrationDoc = await this.database.nanoDb.get("$/migrations");
+			const migrationDoc = await this.database.pouchDb.get("$/migrations");
 
 			migrationDoc.log.push({
 				when: Date.now(),
@@ -41,15 +41,15 @@ export class Migration {
 				version: this.toVersion,
 				actions: actions,
 			});
-			await this.database.nanoDb.insert(migrationDoc);
+			await this.database.pouchDb.put(migrationDoc);
 
 			if (schema) {
 				// Update schema
 				const serializedSchema = coding.serialize(schema);
-				const schemaDoc = await this.database.nanoDb.get("$/schema");
+				const schemaDoc = await this.database.pouchDb.get("$/schema");
 				schemaDoc.version = this.toVersion;
 				schemaDoc.namespaces = serializedSchema.namespaces;
-				await this.database.nanoDb.insert(schemaDoc);
+				await this.database.pouchDb.put(schemaDoc);
 
 				// Reimport the new schema
 				this.database.importSchema(schema);
@@ -78,7 +78,7 @@ export class Migration {
 			const actions = await this.onDowngrade();
 
 			// Get migration document (or create a new one)
-			const migrationDoc = await this.database.nanoDb.get("$/migrations");
+			const migrationDoc = await this.database.pouchDb.get("$/migrations");
 
 			migrationDoc.log.push({
 				when: Date.now(),
@@ -86,15 +86,15 @@ export class Migration {
 				version: this.fromVersion,
 				actions: actions,
 			});
-			await this.database.nanoDb.insert(migrationDoc);
+			await this.database.pouchDb.put(migrationDoc);
 
 			if (schema) {
 				// Update schema
 				const serializedSchema = coding.serialize(schema);
-				const schemaDoc = await this.database.nanoDb.get("$/schema");
+				const schemaDoc = await this.database.pouchDb.get("$/schema");
 				schemaDoc.version = this.fromVersion;
 				schemaDoc.namespaces = serializedSchema.namespaces;
-				await this.database.nanoDb.insert(schemaDoc);
+				await this.database.pouchDb.put(schemaDoc);
 
 				// Reimport the new schema
 				this.database.importSchema(schema);
@@ -105,10 +105,10 @@ export class Migration {
 	}
 
 	async onUpgrade() {
-		throw new Error("Upgrade not implemented");
+		throw new Error("Upgrade process not implemented");
 	}
 	async onDowngrade() {
-		throw new Error("Downgrade not implemented");
+		throw new Error("Downgrade process not implemented");
 	}
 
 	/**
@@ -117,7 +117,7 @@ export class Migration {
 	 * @param {String} typeName Type name
 	 */
 	async list(namespaceName, typeName) {
-		const documents = await this.database.nanoDb.list({
+		const documents = await this.database.pouchDb.allDocs({
 			include_docs: true,
 			startkey: namespaceName + "/" + typeName,
 			endkey: namespaceName + "/" + typeName + "/\ufff0",
@@ -139,7 +139,7 @@ export class Migration {
 			}
 
 			// Bulk save
-			await this.database.nanoDb.bulk({ docs: documents });
+			await this.database.pouchDb.bulkDocs(documents);
 
 			// Return migration action
 			return {
@@ -173,7 +173,7 @@ export class Migration {
 			}
 
 			// Bulk save
-			await this.database.nanoDb.bulk({ docs: documents });
+			await this.database.pouchDb.bulkDocs(documents);
 
 			// Return migration action
 			return {
@@ -205,7 +205,7 @@ export class Migration {
 			}
 
 			// Bulk save
-			await this.database.nanoDb.bulk({ docs: documents });
+			await this.database.pouchDb.bulkDocs(documents);
 
 			// Return migration action
 			return {

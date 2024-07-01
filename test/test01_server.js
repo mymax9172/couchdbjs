@@ -5,11 +5,16 @@ import * as chai from "chai";
 chai.should();
 
 describe("Server class", function () {
-	// Url address
-	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
+	// Server
+	const url = "http://85.234.131.99";
+	const port = 5984;
 
 	// Create a server instance
-	const server = new CouchServer(url);
+	const server = new CouchServer(url, port, {
+		username: "admin",
+		password: "E-digit_26APAlfa!",
+		token: "Basic YWRtaW46RS1kaWdpdF8yNkFQQWxmYSE=",
+	});
 
 	// Test database
 	const dbName = "test";
@@ -40,14 +45,14 @@ describe("Server class", function () {
 	});
 
 	// Use an existing database
-	it("use(): Start using a new database by importing the", async function () {
+	it("use(): Start using a database", async function () {
 		const result = await server.use(dbName);
 		result.should.be.a("object").to.have.property("name", dbName);
 	});
 
 	// Delete an existing database
 	it("delete(): Delete an existing database", async function () {
-		await server.nanoServer.db.create("xyz_sample");
+		await server.create("xyz_sample");
 		const result = await server.delete("xyz_sample");
 		result.should.be.a("object").to.have.property("ok").that.is.true;
 	});

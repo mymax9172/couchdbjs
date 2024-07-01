@@ -316,24 +316,25 @@ export class EntityFactory {
 		checkMandatoryArgument("name", name);
 		checkMandatoryArgument("attachmentDefinition", attachmentDefinition);
 
-		if (name != "*") {
-			// Create an attachment object
-			const att = new Attachment(name, entity);
-			att.compress = attachmentDefinition.compress || false;
-			att.size = attachmentDefinition.size || 0;
-			att.filters = attachmentDefinition.filters || [];
-			att.multiple = attachmentDefinition.multiple || false;
+		// Create an attachment object
+		const attachment = new Attachment(name, entity);
+		attachment.compress = attachmentDefinition.compress || false;
+		attachment.size = attachmentDefinition.size || 0;
+		attachment.filters = attachmentDefinition.filters || null;
+		attachment.multiple = attachmentDefinition.multiple || false;
+		attachment.limit = attachmentDefinition.limit || 0;
 
-			entity.attachments[name] = att;
+		if (!entity.document.hasOwnProperty("_attachments"))
+			entity.document._attachments = {};
+		entity.document._attachments[name] = attachment;
 
-			// Define getters and setters
-			Object.defineProperty(entity, name, {
-				// Getter
-				get() {
-					return entity.attachments[name];
-				},
-			});
-		}
+		// Define getters and setters
+		Object.defineProperty(entity, name, {
+			// Getter
+			get() {
+				return entity.document._attachments[name];
+			},
+		});
 	}
 
 	/**

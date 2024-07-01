@@ -6,11 +6,16 @@ import { should, expect } from "chai";
 should();
 
 describe("Entity class", function () {
-	// Url address
-	const url = "http://admin:E-digit_26APAlfa!@85.234.131.99:5984";
+	// Server
+	const url = "http://85.234.131.99";
+	const port = 5984;
 
 	// Create a server instance
-	const server = new CouchServer(url);
+	const server = new CouchServer(url, port, {
+		username: "admin",
+		password: "E-digit_26APAlfa!",
+		token: "Basic YWRtaW46RS1kaWdpdF8yNkFQQWxmYSE=",
+	});
 
 	// Test database
 	const dbName = "test";
