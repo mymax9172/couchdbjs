@@ -1,6 +1,6 @@
-import { CouchServer } from "../../src/database/couchServer.js";
-import { Entity } from "../../src/model/entity.js";
-import { ExampleDbSchema } from "../sampleModels.js";
+import { CouchServer } from "../src/database/couchServer.js";
+import { Entity } from "../src/model/entity.js";
+import { ExampleDbSchema } from "./sampleModels.js";
 
 import { should, expect } from "chai";
 should();
