@@ -1,13 +1,13 @@
 {
-	"name": "couchdbjs",
+	"name": "couchdb-schema",
 	"version": "0.0.1",
-	"description": "CouchDB Model library",
+	"description": "CouchDB Schema model library",
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
 		"test": "mocha -t 5000"
 	},
-	"author": "",
+	"author": "MyMax1972",
 	"license": "ISC",
 	"dependencies": {
 		"crypto-js": "^4.2.0",

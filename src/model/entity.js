@@ -1,5 +1,6 @@
 import { EntityFactory } from "./entityFactory.js";
 import { Namespace } from "./namespace.js";
+import { Reference } from "./reference.js";
 
 export class Entity {
 	// Namespace
@@ -8,11 +9,8 @@ export class Entity {
 	// Model
 	model;
 
-	// Internal document
+	// Internal document with values
 	document;
-
-	// Referenced entities
-	refs = {};
 
 	/**
 	 * Create a new entity
@@ -87,6 +85,7 @@ export class Entity {
 	validate() {
 		const factory = new EntityFactory(this.namespace, this.model.typeName);
 
+		// Check properties
 		const propertyNames = Object.keys(this.model.properties);
 		propertyNames.forEach((propertyName) => {
 			const propertyDefinition = this.model.properties[propertyName];
@@ -112,6 +111,26 @@ export class Entity {
 				}
 			}
 		});
+
+		// Check relationships
+		if (this.document._references) {
+			Object.keys(this.document._references).forEach((referenceName) => {
+				const reference = this.document._references[referenceName];
+
+				if (reference.$isProxy) {
+					if (!reference.$required) return;
+					if (reference.id == null || reference.id.length === 0)
+						throw new Error("Missing a required id at " + referenceName);
+				} else {
+					// Validate array of reference
+					if (!reference.required) return;
+					if (reference.value.length === 0)
+						throw new Error(
+							"Missing at least a required id in array at " + referenceName
+						);
+				}
+			});
+		}
 		return true;
 	}
 
@@ -148,10 +167,11 @@ export class Entity {
 	 * @returns {JSON} Json document to be saved in the CouchDB
 	 */
 	export() {
-		// Parse the inner document (without _attachment property)
+		// Parse the inner document (without _attachment & _references property)
 		const document = JSON.parse(
 			JSON.stringify(this.document, (key, value) => {
 				if (key === "_attachments") return undefined;
+				if (key === "_references") return undefined;
 				else return value;
 			})
 		);
@@ -168,6 +188,14 @@ export class Entity {
 						data: file.data,
 					};
 				});
+			});
+		}
+
+		if (this.document.hasOwnProperty("_references")) {
+			// Create references
+			Object.keys(this.document._references).forEach((referenceName) => {
+				const reference = this.document._references[referenceName];
+				document[referenceName] = reference.id;
 			});
 		}
 

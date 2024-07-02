@@ -136,13 +136,6 @@ const Company = {
 			multiple: true,
 		},
 	},
-	relationships: {
-		projects: {
-			typeName: "project",
-			property: "company",
-			kind: "one-to-many",
-		},
-	},
 };
 
 const Organization = {
@@ -159,13 +152,10 @@ const Project = {
 	typeName: "project",
 	singleton: false,
 	properties: {
-		company: {
-			reference: "company",
-		},
-		authors: {
-			reference: "user",
-			multiple: true,
-		},
+		// authors: {
+		// 	reference: "user",
+		// 	multiple: true,
+		// },
 	},
 };
 
@@ -204,5 +194,38 @@ export const ExampleDbSchema = {
 			Project,
 			Contract,
 		],
+	},
+
+	relationships: {
+		companyProjects: {
+			type: "one-to-many",
+			left: "company",
+			right: "project",
+			required: true,
+		},
+		organizationProjects: {
+			type: "one-to-many",
+			left: "company",
+			right: {
+				typeName: "project",
+				propertyName: "organization",
+			},
+		},
+		divisionProjects: {
+			type: "one-to-many",
+			left: {
+				typeName: "company",
+				methodName: "getMyProjects",
+			},
+			right: {
+				typeName: "project",
+				propertyName: "division",
+			},
+		},
+		projectsAuthors: {
+			type: "many-to-many",
+			left: "project",
+			right: "user",
+		},
 	},
 };

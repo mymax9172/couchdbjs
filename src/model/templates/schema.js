@@ -7,4 +7,14 @@ export const Schema = {
 		// Name of the namespace and array of models
 		security: [Model1, Model2],
 	},
+
+	// Relationships
+	relationships: {
+		companyEmployees: {
+			type: "one-to-many",
+			left: "company",
+			right: "employee",
+			required: true,
+		},
+	},
 };

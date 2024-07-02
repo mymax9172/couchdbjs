@@ -1,4 +1,5 @@
 import { CouchServer } from "../src/database/couchServer.js";
+import { Reference } from "../src/model/reference.js";
 import { ExampleDbSchema } from "./sampleModels.js";
 
 import { should, expect } from "chai";
@@ -33,21 +34,26 @@ describe("References", function () {
 		namespace = db.namespaces["default"];
 	});
 
-	it("Empty reference allowed", function () {
+	it("Empty reference not allowed", function () {
 		const project = namespace.createEntity("project");
-
 		expect(() => {
 			project.validate();
-		}).not.to.throw();
+		}).to.throw();
 	});
 
-	it("Check if everything but a reference is passed instead of a reference", function () {
+	it("Add a value to a reference (one-to-many)", function () {
+		const project = namespace.createEntity("project");
+		project.company = "default/company/1";
+		expect(project.company).to.be.an.instanceOf(Reference);
+	});
+
+	it("Check if everything but a reference is passed ", function () {
 		const project = namespace.createEntity("project");
 		const company = namespace.createEntity("company");
 
 		expect(() => {
 			project.company = company;
-		}).to.throw();
+		}).not.to.throw();
 		expect(() => {
 			project.company = 12;
 		}).to.throw();
@@ -60,6 +66,9 @@ describe("References", function () {
 		expect(() => {
 			project.company = [];
 		}).to.throw();
+		expect(() => {
+			project.company = company.id;
+		}).not.to.throw();
 	});
 
 	it("Check when a proper reference is passed", async function () {
@@ -76,27 +85,37 @@ describe("References", function () {
 		expect(project.company.$value()).to.be.null;
 		await project.company.$load();
 		expect(project.company.$value()).to.be.not.null;
+
+		//console.log(company);
+		const projects = await company.getCompanyProjects();
+		expect(projects[0].id).to.be.equal(project.id);
 	});
 
-	it("Check array of references", async function () {
+	it("Right side detailed definition", async function () {
 		const project = namespace.createEntity("project");
-		const users = [];
+		const company = namespace.createEntity("company");
+		company.address = "main street";
+		await company.save();
+
+		expect(() => {
+			project.company = company.id;
+			project.organization = company.id;
+			project.validate();
+		}).not.to.throw();
+		await project.save();
+	});
+
+	it("Many to many relationship", async function () {
+		const project = namespace.createEntity("project");
+		const company = namespace.createEntity("company");
 		for (let i = 0; i < 5; i++) {
 			const user = namespace.createEntity("user");
 			user.username = "user" + i;
 			await user.save();
-			users.push(user.id);
+			project.userList.add(user.id);
 		}
-		project.authors = users;
-		await project.authors[0].$load();
-		expect(project.authors[0].$value().id).to.equal(users[0]);
-	});
+		project.company = company.id;
 
-	it("Check relationship", async function () {
-		const project = namespace.createEntity("project");
-		await project.save();
-		const company = (await db.data.default.company.getAll())[0];
-		const projects = await company.getProjects();
-		projects.should.have.lengthOf(1);
+		expect(project.validate()).not.to.throw;
 	});
 });

@@ -6,7 +6,7 @@ import {
 } from "../helpers/tools.js";
 import { security } from "../helpers/security.js";
 import { Namespace } from "./namespace.js";
-import { createReference } from "./reference.js";
+import { ReferenceArray, createReference } from "./reference.js";
 import { Attachment } from "./attachment.js";
 
 export class EntityFactory {
@@ -29,6 +29,9 @@ export class EntityFactory {
 	 * Create and instance a new entity class
 	 */
 	create() {
+		// Retrive the schema
+		const schema = this.namespace.database.schema;
+
 		// Retrieve the model
 		const model = this.namespace.getModel(this.typeName);
 
@@ -41,23 +44,34 @@ export class EntityFactory {
 			this.createProperty(entity, propertyName, propertyDefinition);
 		});
 
-		// Create relationships
-		if (model.relationships) {
-			Object.keys(model.relationships).forEach((relationshipName) => {
-				const relationshipDefinition = model.relationships[relationshipName];
-				this.createRelationship(
-					entity,
-					relationshipName,
-					relationshipDefinition
-				);
-			});
-		}
-
 		// Create attachments
 		if (model.attachments) {
 			Object.keys(model.attachments).forEach((attachmentName) => {
 				const attachmenteDefinition = model.attachments[attachmentName];
 				this.createAttachment(entity, attachmentName, attachmenteDefinition);
+			});
+		}
+
+		// Create relationships
+		if (schema.relationships) {
+			// Loop all relationships
+			const keys = Object.keys(schema.relationships);
+			keys.forEach((relationshipName) => {
+				const relationshipDefinition = schema.relationships[relationshipName];
+
+				// Check if the relationship impact this entity
+				if (
+					relationshipDefinition.left === model.typeName ||
+					relationshipDefinition.left.typeName === model.typeName ||
+					relationshipDefinition.right === model.typeName ||
+					relationshipDefinition.right.typeName === model.typeName
+				) {
+					this.createRelationship(
+						entity,
+						relationshipName,
+						relationshipDefinition
+					);
+				}
 			});
 		}
 
@@ -176,9 +190,6 @@ export class EntityFactory {
 							// Single value
 							return factory.parseEntity(value, namespace, typeName);
 						}
-					} else if (propertyDefinition.reference) {
-						// Return the proxy reference
-						return entity.refs[name];
 					} else {
 						// Return as it is
 						return value;
@@ -230,28 +241,31 @@ export class EntityFactory {
 					}
 				}
 
-				if (propertyDefinition.reference) {
-					// In case of references
-					// Recreate the entity / array of entity
-					const namespaceName =
-						propertyDefinition.namespace || factory.namespace.name;
-					const namespace =
-						factory.namespace.database.namespaces[namespaceName];
-					const typeName = propertyDefinition.reference;
+				// if (propertyDefinition.reference) {
+				// 	// In case of references
+				// 	// Recreate the entity / array of entity
+				// 	const namespaceName =
+				// 		propertyDefinition.namespace || factory.namespace.name;
+				// 	const namespace =
+				// 		factory.namespace.database.namespaces[namespaceName];
+				// 	const typeName = propertyDefinition.reference;
 
-					if (propertyDefinition.multiple) {
-						entity.refs[name] = [];
-						// Array
-						updValue.forEach((element) => {
-							entity.refs[name].push(
-								createReference(element, namespace, typeName)
-							);
-						});
-					} else {
-						// Single value
-						entity.refs[name] = createReference(updValue, namespace, typeName);
-					}
-				}
+				// 	if (propertyDefinition.multiple) {
+				// 		if (!entity.document.hasOwnProperty("_references"))
+				// 			entity.document._references = {};
+
+				// 		entity.document[name] = [];
+				// 		// Array
+				// 		updValue.forEach((element) => {
+				// 			entity.refs[name].push(
+				// 				createReference(element, namespace, typeName)
+				// 			);
+				// 		});
+				// 	} else {
+				// 		// Single value
+				// 		entity.refs[name] = createReference(updValue, namespace, typeName);
+				// 	}
+				// }
 
 				// Store value in the document
 				writeValue(updValue);
@@ -266,41 +280,184 @@ export class EntityFactory {
 		checkMandatoryArgument("name", name);
 		checkMandatoryArgument("relationshipDefinition", relationshipDefinition);
 
-		switch (relationshipDefinition.kind) {
-			case "one-to-many":
-				// Name of the method
-				const functionName = "get" + name[0].toUpperCase() + name.slice(1);
+		function createReferenceProperty(
+			entity,
+			propertyName,
+			namespaceName,
+			typeName,
+			required = false
+		) {
+			// Get the namespace
+			const namespace = entity.namespace.database.namespaces[namespaceName];
 
-				// Retrieve the type name
-				const typeName = relationshipDefinition.typeName;
+			// Create where to save references
+			if (!entity.document._references) entity.document._references = {};
+			entity.document._references[propertyName] = createReference(
+				namespace,
+				typeName,
+				required
+			);
 
-				// Retrieve the right namespace
-				const namespaceName =
-					relationshipDefinition.namespace || this.namespace.name;
+			// Create a new property for this entity
+			Object.defineProperty(entity, propertyName, {
+				get() {
+					return entity.document._references[propertyName];
+				},
+				set(value) {
+					if (value instanceof Entity)
+						entity.document._references[propertyName].id = value.id;
+					else entity.document._references[propertyName].id = value;
+				},
+			});
+		}
 
-				// Create the method
-				entity[functionName] = async function () {
-					// Define the query
-					const query = {};
-					query[relationshipDefinition.property] = this.id;
+		function createArrayOfReferenceProperty(
+			entity,
+			propertyName,
+			namespaceName,
+			typeName,
+			required = false
+		) {
+			// Get the namespace
+			const namespace = entity.namespace.database.namespaces[namespaceName];
 
-					return await this.namespace.database.data[namespaceName][
-						typeName
-					].find(query);
+			// Get the model
+			const model =
+				entity.namespace.database.namespaces[namespaceName].getModel(typeName);
+
+			// Create where to save references
+			if (!entity.document._references) entity.document._references = {};
+			entity.document._references[propertyName] = new ReferenceArray(
+				namespace,
+				typeName,
+				required
+			);
+
+			// Create a new property for this entity
+			Object.defineProperty(entity, propertyName, {
+				get() {
+					return entity.document._references[propertyName];
+				},
+			});
+		}
+
+		function createQueryMethod(
+			entity,
+			name,
+			functionName,
+			namespaceName,
+			typeName,
+			propertyName
+		) {
+			// Name of the method
+			var fName;
+			if (functionName) fName = functionName;
+			else fName = "get" + name[0].toUpperCase() + name.slice(1);
+
+			// Namespace
+			const namespace = entity.namespace.database.data[namespaceName];
+
+			// Create the method
+			entity[fName] = async function () {
+				// Define the query
+				const query = {};
+				query[propertyName] = this.id;
+
+				return await namespace[typeName].find(query);
+			};
+
+			// Create the index
+			namespace[typeName].defineIndex(name, [propertyName]);
+		}
+
+		function getFullTypeName(value) {
+			var typeName;
+			if (typeof value === "string") typeName = value;
+			else typeName = value.typeName;
+
+			if (typeName.indexOf(".") === -1)
+				return {
+					namespace: entity.namespace.name,
+					typeName: typeName,
 				};
+			else
+				return {
+					namespace: typeName.split(".")[0],
+					typeName: typeName.split(".")[1],
+				};
+		}
 
-				// Create the index
-				const indexName =
-					name[0].toUpperCase() +
-					name.slice(1) +
-					"By" +
-					relationshipDefinition.property[0].toUpperCase() +
-					relationshipDefinition.property.slice(1);
+		// Check if left or right side
+		const leftFullTypeName = getFullTypeName(relationshipDefinition.left);
+		const isLeft =
+			leftFullTypeName.namespace === entity.namespace.name &&
+			leftFullTypeName.typeName === entity.model.typeName;
 
-				this.namespace.database.data[namespaceName][typeName].defineIndex(
-					indexName,
-					[relationshipDefinition.property]
-				);
+		const leftType = getFullTypeName(relationshipDefinition.left);
+		const rightType = getFullTypeName(relationshipDefinition.right);
+
+		switch (relationshipDefinition.type) {
+			case "one-to-many":
+				const rightPropertyName =
+					relationshipDefinition.right?.propertyName ||
+					relationshipDefinition.left?.typeName ||
+					relationshipDefinition.left;
+
+				if (isLeft) {
+					// Left side
+
+					createQueryMethod(
+						entity,
+						name,
+						relationshipDefinition.left?.methodName,
+						rightType.namespace,
+						rightType.typeName,
+						rightPropertyName
+					);
+				} else {
+					// Right side
+					createReferenceProperty(
+						entity,
+						rightPropertyName,
+						leftType.namespace,
+						leftType.typeName,
+						relationshipDefinition.required
+					);
+				}
+				break;
+
+			case "many-to-many":
+				if (isLeft) {
+					// Left side
+
+					const rightPropertyName =
+						relationshipDefinition.left?.propertyName ||
+						relationshipDefinition.right?.typeName ||
+						relationshipDefinition.right;
+
+					createArrayOfReferenceProperty(
+						entity,
+						rightPropertyName + "List",
+						rightType.namespace,
+						rightType.typeName,
+						relationshipDefinition.required
+					);
+				} else {
+					// Right side
+
+					const leftPropertyName =
+						relationshipDefinition.right?.propertyName ||
+						relationshipDefinition.left?.typeName ||
+						relationshipDefinition.left;
+
+					createArrayOfReferenceProperty(
+						entity,
+						leftPropertyName + "List",
+						leftType.namespace,
+						leftType.typeName,
+						relationshipDefinition.required
+					);
+				}
 
 				break;
 

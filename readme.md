@@ -1,8 +1,8 @@
 # CouchDBjs
 
-CouchDB ORM library based on [Nano library](https://www.npmjs.com/package/nano) and [Apache CouchDB](https://couchdb.apache.org/) official documentation for [Node.js](https://nodejs.org/)
+CouchDB ORM library based on [PouchDB library](https://www.pouchdb.com) and [Apache CouchDB](https://couchdb.apache.org/) official documentation for [Node.js](https://nodejs.org/)
 
-This library allows to define your data model (schema) and use auto-generated Entity class to perform database operations. If you do not need a data model, use directly Nano library
+This library allows to define your data model (schema) and use auto-generated Entity class to perform database operations. If you do not need a data model, use directly PouchDB library
 
 ## Installation
 
@@ -59,25 +59,15 @@ import { CouchServer } from "couchdbjs";
 
 // Create a server instance
 url = "http:/<YOURURL>:5984";
-const couchDB = new CouchServer(url);
-
-// Get info about the server
-const info = await couchDB.getInfo();
-```
-
-It is also possible to provide some configuration to your server like for example the encryption secret key
-
-```js
-import { CouchServer } from "couchdbjs";
-
-// Create a server instance
-url = "http:/<YOURURL>:5984";
-const couchDB = new CouchServer(url, {
+const server = new CouchServer(url, {
 	secretKey: "abcdefgh6747",
+	username: "myusername",
+	password: "mypassword",
+	token: "mytokenauthentication",
 });
 
 // Get info about the server
-const info = await couchDB.getInfo();
+const info = await server.getInfo();
 ```
 
 ### Discover existing databases
@@ -88,46 +78,38 @@ There is a specific method to get all database names from the server
 import { CouchServer } from "couchdbjs";
 
 // Create a server instance
-url = "http:/<YOURURL>:5984";
-const couchDB = new CouchServer(url);
+// server = ....
 
 // Get all database names
-const list = await couchDB.getDatabaseList();
+const list = await server.getDatabaseList();
 
 // A single database name can be easily tested
-const existABC = await coucbDB.exists("crm");
+const existABC = await server.exists("crm");
 ```
 
 ### Creating a new database with a schema
 
-Having a schema allow the server to store in a schema document ($/schema) all details about your namespaces and data models. This would be useful if you want to track versions or use a web application like CouchDBExplorer to navigate your data
+Having a schema allow the server to store in the schema document ($/schema) all details about your namespaces and data models. This would be useful if you want to track versions or use a web application like CouchDBExplorer to navigate your data
 
 ```js
 import { CouchServer } from "couchdbjs";
-import { MyCRMDatabase } from "<your-project>";
+import { schema } from "<your-project>";
 
 // Create a server instance
-url = "http:/<YOURURL>:5984";
-const couchDB = new CouchServer(url);
+// server = ....
 
 // Create a new database named "crm" with a database schema
-const result = await couchDB.create("crm", MyCRMDatabase);
+const result = await server.create("crm", schema);
 ```
 
-In this case we have defined a proper class for our database and provided to the create() method.
+We have provided a proper schema to define all namespaces and entities.
 
 A schema is a standard js object that define your namespaces and data models, the example below define a schema with just a namespace (named 'default') with just one data model (named 'user')
 
 ```js
-
-
 const userModel = {
 	typeName: "user",
-	singleton: false,
-	properties: {
-		firstName: {}
-		lastName: {},
-	},
+	// .... definition of the user data model
 };
 
 export const SampleDbSchema = {
@@ -147,11 +129,10 @@ By knowing the database name is quite simple to delete it
 import { CouchServer } from "couchdbjs";
 
 // Create a server instance
-url = "http:/<YOURURL>:5984";
-const couchDB = new CouchServer(url);
+// server = ....
 
 // Delete the database named 'crm'
-await couchDB.delete("crm");
+await server.delete("crm");
 ```
 
 ### Data model definition
@@ -194,8 +175,7 @@ Once our database is ready we can create our first document
 import { CouchServer } from "couchdbjs";
 
 // Create a server instance
-url = "http:/<YOURURL>:5984";
-const server = new CouchServer(url);
+// server = ....
 
 // Use the crm database
 const db = await server.use("crm");

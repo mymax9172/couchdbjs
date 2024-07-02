@@ -1,5 +1,5 @@
-import { CouchServer } from "../src/database/couchServer.js";
-import { SampleDbSchema } from "./sampleDb.js";
+import { CouchServer } from "../../src/database/couchServer.js";
+import { SampleDbSchema } from "../sampleDb.js";
 
 import * as chai from "chai";
 chai.should();

@@ -135,11 +135,11 @@ export class CouchServer {
 					if (schema) {
 						// Serialize the schema
 						const serializedSchema = coding.serialize(schema);
-						serializedSchema._id = "$/schema";
 						if (!serializedSchema.hasOwnProperty("version"))
 							serializedSchema.version = 1;
 
 						// Store the schema
+						serializedSchema._id = "$/schema";
 						await db.put(serializedSchema);
 
 						// Initialize migrations

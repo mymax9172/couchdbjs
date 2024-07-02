@@ -20,6 +20,9 @@ export class CouchDatabase {
 	// Version of the database
 	version = 1;
 
+	// Schema
+	schema;
+
 	// Namespaces
 	namespaces = {};
 
@@ -57,6 +60,9 @@ export class CouchDatabase {
 		this.version = schema.version;
 		this.namespaces = {};
 		this.data = {};
+
+		// Save schema
+		this.schema = schema;
 
 		// Read the schema and setup the instance
 		Object.keys(schema.namespaces).forEach((namespaceKey) => {

@@ -68,12 +68,9 @@ export const Model = {
 		},
 	},
 
-	// Relationships
-	relationships: {},
-
 	// Attachments
 	attachments: {
-		// Named attachment (can be read by contract property on entity)
+		// Named attachment (can be read as a property on the entity)
 		contract: {
 			filters: ["application/pdf"], // Limit in terms of mime types
 			size: 1000, // Limit in terms of size (kb)
