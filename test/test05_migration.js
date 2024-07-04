@@ -1,6 +1,7 @@
 import { CouchServer } from "../src/database/couchServer.js";
 import { Migration } from "../src/database/migration.js";
 import { SampleDbSchema } from "./sampleDb.js";
+import "dotenv/config";
 
 import { should, expect } from "chai";
 should();
@@ -82,15 +83,11 @@ const schema2 = {
 };
 
 describe("Migrations", function () {
-	// Server
-	const url = "http://85.234.131.99";
-	const port = 5984;
-
 	// Create a server instance
-	const server = new CouchServer(url, port, {
-		username: "admin",
-		password: "E-digit_26APAlfa!",
-		token: "Basic YWRtaW46RS1kaWdpdF8yNkFQQWxmYSE=",
+	const server = new CouchServer(process.env.URL, process.env.PORT, {
+		username: process.env.USER,
+		password: process.env.PASSWORD,
+		token: process.env.TOKEN,
 	});
 
 	// Test database

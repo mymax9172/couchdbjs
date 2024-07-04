@@ -126,6 +126,20 @@ export class CouchServer {
 		return list.includes(name);
 	}
 
+	async hasSchema(name) {
+		try {
+			const db = new PouchDB(this.url + ":" + this.port + "/" + name, {
+				auth: {
+					username: this.config.username,
+					password: this.config.password,
+				},
+			});
+			const schema = await db.get("$/schema");
+			if (schema != null) return true;
+		} catch (error) {}
+		return false;
+	}
+
 	/**
 	 * Create a new database in the server
 	 * @param {string} name Name of the database

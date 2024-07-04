@@ -11,6 +11,7 @@
 	"license": "ISC",
 	"dependencies": {
 		"crypto-js": "^4.2.0",
+		"dotenv": "^16.4.5",
 		"pouchdb": "^9.0.0",
 		"pouchdb-find": "^9.0.0"
 	},

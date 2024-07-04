@@ -1,20 +1,17 @@
 import { CouchServer } from "../src/database/couchServer.js";
 import { Reference } from "../src/model/reference.js";
 import { ExampleDbSchema } from "./sampleModels.js";
+import "dotenv/config";
 
 import { should, expect } from "chai";
 should();
 
 describe("References", function () {
-	// Server
-	const url = "http://85.234.131.99";
-	const port = 5984;
-
 	// Create a server instance
-	const server = new CouchServer(url, port, {
-		username: "admin",
-		password: "E-digit_26APAlfa!",
-		token: "Basic YWRtaW46RS1kaWdpdF8yNkFQQWxmYSE=",
+	const server = new CouchServer(process.env.URL, process.env.PORT, {
+		username: process.env.USER,
+		password: process.env.PASSWORD,
+		token: process.env.TOKEN,
 	});
 
 	// Test database
