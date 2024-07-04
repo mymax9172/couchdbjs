@@ -12,6 +12,9 @@ export class Entity {
 	// Internal document with values
 	document;
 
+	// Relationships
+	relationships;
+
 	/**
 	 * Create a new entity
 	 * Do not call this method directly, use createEntity method in namespace
@@ -116,19 +119,7 @@ export class Entity {
 		if (this.document._references) {
 			Object.keys(this.document._references).forEach((referenceName) => {
 				const reference = this.document._references[referenceName];
-
-				if (reference.$isProxy) {
-					if (!reference.$required) return;
-					if (reference.id == null || reference.id.length === 0)
-						throw new Error("Missing a required id at " + referenceName);
-				} else {
-					// Validate array of reference
-					if (!reference.required) return;
-					if (reference.value.length === 0)
-						throw new Error(
-							"Missing at least a required id in array at " + referenceName
-						);
-				}
+				reference.validate();
 			});
 		}
 		return true;
@@ -139,9 +130,13 @@ export class Entity {
 	 * @param {JSON} doc Document to import
 	 */
 	import(doc) {
-		Object.keys(doc).forEach((key) => {
-			// Discard attachments
-			if (key != "_attachments") this.document[key] = doc[key];
+		// Read CouchDB properties
+		const couchDbProperties = ["_id", "_rev", "_deleted"];
+		couchDbProperties.forEach((key) => (this.document[key] = doc[key]));
+
+		// Read all model properties
+		Object.keys(this.model.properties).forEach((propertyName) => {
+			this.document[propertyName] = doc[propertyName];
 		});
 
 		// Read all attachment stubs
@@ -160,6 +155,24 @@ export class Entity {
 				attachment.defineStub(filename, contentType);
 			});
 		}
+
+		// Read all references
+		if (this.document._references) {
+			Object.keys(this.document._references).forEach((key) => {
+				const relationship = Object.values(this.relationships).find(
+					(e) => e.rightPropertyName === key || e.leftPropertyName === key
+				);
+				if (relationship.type === "one-to-many") {
+					this.document._references[key] = doc[relationship.rightPropertyName];
+				}
+
+				if (relationship.type === "many-to-many") {
+					doc[relationship.leftPropertyName].forEach((id) => {
+						this.document._references[key].add(id);
+					});
+				}
+			});
+		}
 	}
 
 	/**
@@ -176,6 +189,7 @@ export class Entity {
 			})
 		);
 
+		// Attachments
 		if (this.document.hasOwnProperty("_attachments")) {
 			document._attachments = {};
 			// Create attachments
@@ -191,14 +205,14 @@ export class Entity {
 			});
 		}
 
+		// Relationships
 		if (this.document.hasOwnProperty("_references")) {
 			// Create references
-			Object.keys(this.document._references).forEach((referenceName) => {
-				const reference = this.document._references[referenceName];
-				document[referenceName] = reference.id;
+			Object.keys(this.document._references).forEach((propertyName) => {
+				const reference = this.document._references[propertyName];
+				document[propertyName] = reference.data();
 			});
 		}
-
 		return document;
 	}
 
@@ -209,5 +223,14 @@ export class Entity {
 	async save() {
 		const service = this.namespace.getService(this.model.typeName);
 		return await service.save(this);
+	}
+
+	/**
+	 * Refresh the entity (not saved changes will be lost)
+	 */
+	async refresh() {
+		const service = this.namespace.getService(this.model.typeName);
+		const entity = await service.get(this.id);
+		Object.assign(this, entity);
 	}
 }

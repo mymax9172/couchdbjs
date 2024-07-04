@@ -3,6 +3,7 @@ import { SingletonService } from "../services/singletonService.js";
 import { CollectionService } from "../services/collectionService.js";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 import { coding } from "../helpers/coding.js";
+import { Relationship } from "./relationship.js";
 
 /**
  * Class for a CouchDB database
@@ -28,6 +29,9 @@ export class CouchDatabase {
 
 	// Data services
 	data = {};
+
+	// Relationships
+	relationships = {};
 
 	/**
 	 * Create a new CouchDB database instance
@@ -60,6 +64,7 @@ export class CouchDatabase {
 		this.version = schema.version;
 		this.namespaces = {};
 		this.data = {};
+		this.relationships = {};
 
 		// Save schema
 		this.schema = schema;
@@ -77,6 +82,23 @@ export class CouchDatabase {
 
 			this.useNamespace(namespace);
 		});
+
+		// Read all relationships
+		if (schema.relationships) {
+			const keys = Object.keys(schema.relationships);
+			keys.forEach((relationshipName) => {
+				const definition = {
+					name: relationshipName,
+					...schema.relationships[relationshipName],
+				};
+
+				// Create a relationship instance
+				const relationship = new Relationship(definition);
+
+				// Store the relationship in the database
+				this.relationships[relationshipName] = relationship;
+			});
+		}
 	}
 
 	/**

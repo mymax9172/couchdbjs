@@ -4,6 +4,7 @@ import PouchdbFind from "pouchdb-find";
 import { CouchDatabase } from "./couchDatabase.js";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 import { coding } from "../helpers/coding.js";
+import { Relationship } from "./relationship.js";
 
 /**
  * Server class for a CouchDB server
@@ -91,10 +92,28 @@ export class CouchServer {
 
 	/**
 	 * Provide names of all databases
-	 * @returns {Promise<array>} List of all database available on the server or null if any error occurred
+	 * @param {boolean} [onlyWithSchema=true] True if only schema based database names are listed
+	 * @returns {Promise<array>} List of all database available on the server (with a proper schema) or null if any error occurred
 	 */
-	async getDatabaseList() {
-		return await this.fetchRequest("/_all_dbs");
+	async getDatabaseList(onlyWithSchema) {
+		const list = await this.fetchRequest("/_all_dbs");
+
+		if (!onlyWithSchema) return list;
+
+		const result = [];
+		for (let i = 0; i < list.length; i++) {
+			const db = new PouchDB(this.url + ":" + this.port + "/" + list[i], {
+				auth: {
+					username: this.config.username,
+					password: this.config.password,
+				},
+			});
+			try {
+				const schema = await db.get("$/schema");
+				if (schema != null) result.push(list[i]);
+			} catch (error) {}
+		}
+		return result;
 	}
 
 	/**
@@ -110,7 +129,7 @@ export class CouchServer {
 	/**
 	 * Create a new database in the server
 	 * @param {string} name Name of the database
-	 * @param {JSON} schema Schema of the database
+	 * @param {JSON} schema Schema of the database (optional)
 	 */
 	async create(name, schema) {
 		// Check mandatory arguments
@@ -120,10 +139,14 @@ export class CouchServer {
 		const regEx = new RegExp(rule);
 		if (regEx.test(name)) {
 			try {
+				// Check if database name is already used
+				if (await this.exists(name))
+					throw new Error("A database with this name already exists");
+
 				// Create the CouchDB database
 				const response = await this.fetchRequest("/" + name, "PUT");
 
-				if (response.ok) {
+				if (response.ok && schema) {
 					// Connect to the new database
 					const db = new PouchDB(this.url + ":" + this.port + "/" + name, {
 						auth: {
@@ -132,29 +155,7 @@ export class CouchServer {
 						},
 					});
 
-					if (schema) {
-						// Serialize the schema
-						const serializedSchema = coding.serialize(schema);
-						if (!serializedSchema.hasOwnProperty("version"))
-							serializedSchema.version = 1;
-
-						// Store the schema
-						serializedSchema._id = "$/schema";
-						await db.put(serializedSchema);
-
-						// Initialize migrations
-						const migrations = {
-							_id: "$/migrations",
-							log: [
-								{
-									when: Date.now(),
-									type: "init",
-									version: 1,
-								},
-							],
-						};
-						await db.put(migrations);
-					}
+					await this.defineSchema(db, schema);
 				}
 				return { ok: true };
 			} catch (error) {
@@ -212,4 +213,55 @@ export class CouchServer {
 	 * @returns {Migration} Migration details
 	 */
 	async migrate(name, migration) {}
+
+	/**
+	 * Create the schema and indexes
+	 * @param {PouchDB} db Pouchdb instance
+	 * @param {JSON} schema schema to create
+	 */
+	async defineSchema(db, schema) {
+		// Serialize the schema
+		const serializedSchema = coding.serialize(schema);
+		if (!serializedSchema.hasOwnProperty("version"))
+			serializedSchema.version = 1;
+
+		// Store the schema
+		serializedSchema._id = "$/schema";
+		await db.put(serializedSchema);
+
+		// Create indexes
+		if (schema.relationships) {
+			const relationshipNames = Object.keys(schema.relationships);
+			relationshipNames.forEach(async (relationshipName) => {
+				const definition = JSON.parse(
+					JSON.stringify(schema.relationships[relationshipName])
+				);
+				definition.name = relationshipName;
+
+				const relationship = new Relationship(definition);
+				const index = relationship.getIndex();
+
+				const indexDefinition = {
+					name: index.name,
+					ddoc: index.name,
+					fields: [...index.fields],
+				};
+
+				await db.createIndex(indexDefinition);
+			});
+		}
+
+		// Initialize migrations
+		const migrations = {
+			_id: "$/migrations",
+			log: [
+				{
+					when: Date.now(),
+					type: "init",
+					version: 1,
+				},
+			],
+		};
+		await db.put(migrations);
+	}
 }

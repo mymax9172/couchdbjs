@@ -1,13 +1,15 @@
+import { Entity } from "./entity.js";
+
 export class Reference {
 	id = null;
 	value = null;
 
 	namespace;
 	typeName;
+	required;
+
 	model;
 	service;
-
-	required;
 
 	constructor(namespace, typeName, required) {
 		this.namespace = namespace;
@@ -18,26 +20,38 @@ export class Reference {
 		this.service = this.namespace.getService(typeName);
 	}
 
-	setId(id) {
-		if (typeof id !== "string")
-			throw new Error("Invalid id - not a string, " + id);
+	set(value) {
+		if (value instanceof Entity) {
+			this.id = value.id;
+			this.value = value;
+		} else {
+			const id = value;
+			if (typeof id !== "string")
+				throw new Error("Invalid id - not a string, " + id);
 
-		if (this.required && (id == null || id.length === 0))
-			throw new Error("Id is required");
-		const s = id.split("/");
-		if (this.model.singleton && s.length != 2)
-			throw new Error("Invalid id - singleton, " + id);
-		if (!this.model.singleton && s.length != 3)
-			throw new Error("Invalid id, collecton" + id);
-		if (s[0] !== this.namespace.name)
-			throw new Error("Invalid id - wrong namespace, " + id);
-		if (s[1] !== this.typeName)
-			throw new Error(
-				"Invalid id -  wrong typename, " + id + " " + s[1] + "," + this.typeName
-			);
+			if (this.required && (id == null || id.length === 0))
+				throw new Error("Id is required");
+			const s = id.split("/");
+			if (this.model.singleton && s.length != 2)
+				throw new Error("Invalid id for singleton type, " + id);
+			if (!this.model.singleton && s.length != 3)
+				throw new Error("Invalid id for collecton type, " + id);
+			if (s[0] !== this.namespace.name)
+				throw new Error("Invalid id with wrong namespace, " + id);
+			if (s[1] !== this.typeName)
+				throw new Error("Invalid id with wrong typename, " + id);
 
-		this.id = id;
-		this.value = null;
+			this.id = id;
+			this.value = null;
+		}
+	}
+
+	get() {
+		return this.value;
+	}
+
+	data() {
+		return this.id;
 	}
 
 	async load(force = false) {
@@ -46,58 +60,14 @@ export class Reference {
 			this.value = value;
 		}
 	}
+
+	validate() {
+		if (this.required && (this.id == null || this.id.length === 0))
+			throw new Error("Id is required");
+	}
 }
 
-export function createReference(namespace, typeName, required) {
-	const reference = new Reference(namespace, typeName, required);
-	const handler = {
-		get(target, prop) {
-			// ID is reported as it is
-			if (prop === "id") return target.id;
-
-			// Any other property part of the model of the target...
-			if (Object.keys(target.model.properties).includes(prop)) {
-				// Load in case it is not yet
-				if (target.value == null)
-					throw new Error("Load data before accessing it");
-				return target.value[prop];
-			}
-
-			if (prop === "$load") {
-				return async function (...args) {
-					await target.load(args);
-				};
-			}
-
-			if (prop === "$value") {
-				return function () {
-					return target.value;
-				};
-			}
-
-			if (prop === "$required") {
-				return target.required;
-			}
-
-			if (prop === "$isProxy") return true;
-
-			// Clean the rest
-			return undefined;
-		},
-		set(target, prop, value) {
-			// ID is reported as it is
-			if (prop === "id") {
-				target.setId(value);
-				return true;
-			}
-			return false;
-		},
-	};
-
-	return new Proxy(reference, handler);
-}
-
-export class ReferenceArray {
+export class ReferenceList {
 	references = [];
 
 	namespace;
@@ -110,25 +80,55 @@ export class ReferenceArray {
 		this.required = required;
 	}
 
-	add(id) {
+	add(entity) {
+		var id, value;
+
+		if (entity instanceof Entity) {
+			id = entity.id;
+			value = entity;
+		} else {
+			id = entity;
+			value = null;
+		}
+
 		if (this.references.find((e) => e.id === id) != null)
-			throw new Error("This id already exists, " + id);
-		const reference = createReference(
+			throw new Error("Duplication error in the list, " + id);
+
+		const reference = new Reference(
 			this.namespace,
 			this.typeName,
 			this.required
 		);
 		reference.id = id;
+		reference.value = value;
 		this.references.push(reference);
 	}
 
-	remove(id) {
+	remove(entity) {
+		var id;
+
+		if (entity instanceof Entity) id = entity.id;
+		else id = value;
+
 		if (this.references.find((e) => e.id === id) == null)
 			throw new Error("This id does not exist, " + id);
+
 		this.references = this.references.filter((e) => e.id != id);
 	}
 
-	value() {
+	get() {
+		return this.references;
+	}
+
+	data() {
 		return this.references.map((e) => e.id);
+	}
+
+	validate() {
+		if (
+			this.required &&
+			(this.references == null || this.references.length === 0)
+		)
+			throw new Error("At least one reference is required");
 	}
 }

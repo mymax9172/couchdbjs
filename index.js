@@ -1,3 +1,4 @@
-import { CouchDBServer } from "./src/CouchDBServer";
+import { CouchServer } from "./src/database/couchServer.js";
+import { CouchDatabase } from "./src/database/couchDatabase.js";
 
-export { CouchDBServer };
+export { CouchServer, CouchDatabase };

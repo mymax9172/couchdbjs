@@ -33,7 +33,7 @@ export class DataService {
 			throw new Error(
 				"Validation error of type " +
 					entity.model.typeName +
-					"(" +
+					" (" +
 					entity +
 					"): " +
 					error

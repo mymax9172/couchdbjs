@@ -1,4 +1,4 @@
-# CouchDBjs
+# CouchDB-schema
 
 CouchDB ORM library based on [PouchDB library](https://www.pouchdb.com) and [Apache CouchDB](https://couchdb.apache.org/) official documentation for [Node.js](https://nodejs.org/)
 

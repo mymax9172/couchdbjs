@@ -199,33 +199,27 @@ export const ExampleDbSchema = {
 	relationships: {
 		companyProjects: {
 			type: "one-to-many",
-			left: "company",
-			right: "project",
+			left: "default.company",
+			right: "default.project",
 			required: true,
 		},
+
 		organizationProjects: {
 			type: "one-to-many",
-			left: "company",
+			left: {
+				typeName: "default.company",
+				queryName: "myProjects",
+			},
 			right: {
-				typeName: "project",
+				typeName: "default.project",
 				propertyName: "organization",
 			},
 		},
-		divisionProjects: {
-			type: "one-to-many",
-			left: {
-				typeName: "company",
-				methodName: "getMyProjects",
-			},
-			right: {
-				typeName: "project",
-				propertyName: "division",
-			},
-		},
+
 		projectsAuthors: {
 			type: "many-to-many",
-			left: "project",
-			right: "user",
+			left: "default.project",
+			right: "default.user",
 		},
 	},
 };

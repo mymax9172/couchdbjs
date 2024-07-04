@@ -82,40 +82,35 @@ describe("References", function () {
 		}).not.to.throw();
 		await project.save();
 
-		expect(project.company.$value()).to.be.null;
-		await project.company.$load();
-		expect(project.company.$value()).to.be.not.null;
+		expect(project.company.get()).to.be.null;
+		await project.company.load();
+		expect(project.company.get()).to.be.not.null;
 
-		//console.log(company);
-		const projects = await company.getCompanyProjects();
+		const projects = await company.getProjectList();
 		expect(projects[0].id).to.be.equal(project.id);
 	});
 
-	it("Right side detailed definition", async function () {
-		const project = namespace.createEntity("project");
-		const company = namespace.createEntity("company");
-		company.address = "main street";
-		await company.save();
-
-		expect(() => {
-			project.company = company.id;
-			project.organization = company.id;
-			project.validate();
-		}).not.to.throw();
-		await project.save();
-	});
+	var project;
 
 	it("Many to many relationship", async function () {
-		const project = namespace.createEntity("project");
+		project = namespace.createEntity("project");
 		const company = namespace.createEntity("company");
+
 		for (let i = 0; i < 5; i++) {
 			const user = namespace.createEntity("user");
 			user.username = "user" + i;
+			project.userList.add(user);
+
 			await user.save();
-			project.userList.add(user.id);
 		}
 		project.company = company.id;
+		expect(await project.save()).not.to.throw;
+	});
 
-		expect(project.validate()).not.to.throw;
+	it("Load entity with references", async function () {
+		const p = await db.data.default.project.get(project.id);
+
+		expect(p.userList.get()[0].id === project.userList.get()[0].id).to.be.true;
+		//console.log(project.userList.references[0].get());
 	});
 });

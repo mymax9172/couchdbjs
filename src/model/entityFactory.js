@@ -6,8 +6,9 @@ import {
 } from "../helpers/tools.js";
 import { security } from "../helpers/security.js";
 import { Namespace } from "./namespace.js";
-import { ReferenceArray, createReference } from "./reference.js";
+import { Reference, ReferenceList } from "./reference.js";
 import { Attachment } from "./attachment.js";
+import { Relationship } from "../database/relationship.js";
 
 export class EntityFactory {
 	typeName;
@@ -52,25 +53,18 @@ export class EntityFactory {
 			});
 		}
 
-		// Create relationships
-		if (schema.relationships) {
+		// Create relationships (if any)
+		if (Object.keys(this.namespace.database.relationships).length > 0) {
 			// Loop all relationships
-			const keys = Object.keys(schema.relationships);
-			keys.forEach((relationshipName) => {
-				const relationshipDefinition = schema.relationships[relationshipName];
-
-				// Check if the relationship impact this entity
-				if (
-					relationshipDefinition.left === model.typeName ||
-					relationshipDefinition.left.typeName === model.typeName ||
-					relationshipDefinition.right === model.typeName ||
-					relationshipDefinition.right.typeName === model.typeName
-				) {
-					this.createRelationship(
-						entity,
-						relationshipName,
-						relationshipDefinition
-					);
+			const relationships = Object.values(
+				this.namespace.database.relationships
+			);
+			relationships.forEach((relationship) => {
+				// Create the relationship
+				if (relationship.implement(entity)) {
+					// Store the relationship in the entity
+					if (entity.relationships == null) entity.relationships = {};
+					entity.relationships[relationship.name] = relationship;
 				}
 			});
 		}
@@ -273,198 +267,130 @@ export class EntityFactory {
 		});
 	}
 
-	// Create a relationship
-	createRelationship(entity, name, relationshipDefinition) {
-		// Check mandatory arguments
-		checkMandatoryArgument("entity", entity);
-		checkMandatoryArgument("name", name);
-		checkMandatoryArgument("relationshipDefinition", relationshipDefinition);
+	// // Create a relationship
+	// createRelationship(entity, relationship) {
+	// 	// Check mandatory arguments
+	// 	checkMandatoryArgument("entity", entity);
+	// 	checkMandatoryArgument("relationship", relationship);
 
-		function createReferenceProperty(
-			entity,
-			propertyName,
-			namespaceName,
-			typeName,
-			required = false
-		) {
-			// Get the namespace
-			const namespace = entity.namespace.database.namespaces[namespaceName];
+	// 	relationship.implement(entity);
 
-			// Create where to save references
-			if (!entity.document._references) entity.document._references = {};
-			entity.document._references[propertyName] = createReference(
-				namespace,
-				typeName,
-				required
-			);
+	// 	// function createReferenceProperty(
+	// 	// 	entity,
+	// 	// 	propertyName,
+	// 	// 	namespaceName,
+	// 	// 	typeName,
+	// 	// 	required = false
+	// 	// ) {
+	// 	// 	// Get the namespace
+	// 	// 	const namespace = entity.namespace.database.namespaces[namespaceName];
 
-			// Create a new property for this entity
-			Object.defineProperty(entity, propertyName, {
-				get() {
-					return entity.document._references[propertyName];
-				},
-				set(value) {
-					if (value instanceof Entity)
-						entity.document._references[propertyName].id = value.id;
-					else entity.document._references[propertyName].id = value;
-				},
-			});
-		}
+	// 	// 	// Create where to save references
+	// 	// 	if (!entity.document._references) entity.document._references = {};
+	// 	// 	entity.document._references[propertyName] = new Reference(
+	// 	// 		namespace,
+	// 	// 		typeName,
+	// 	// 		required
+	// 	// 	);
 
-		function createArrayOfReferenceProperty(
-			entity,
-			propertyName,
-			namespaceName,
-			typeName,
-			required = false
-		) {
-			// Get the namespace
-			const namespace = entity.namespace.database.namespaces[namespaceName];
+	// 	// 	// Create a new property for this entity
+	// 	// 	Object.defineProperty(entity, propertyName, {
+	// 	// 		get() {
+	// 	// 			return entity.document._references[propertyName];
+	// 	// 		},
+	// 	// 		set(value) {
+	// 	// 			if (value instanceof Entity)
+	// 	// 				entity.document._references[propertyName].id = value.id;
+	// 	// 			else entity.document._references[propertyName].id = value;
+	// 	// 		},
+	// 	// 	});
 
-			// Get the model
-			const model =
-				entity.namespace.database.namespaces[namespaceName].getModel(typeName);
+	// 	// 	return propertyName;
+	// 	// }
+	// 	// function createReferenceListProperty(
+	// 	// 	entity,
+	// 	// 	propertyName,
+	// 	// 	namespaceName,
+	// 	// 	typeName,
+	// 	// 	required = false
+	// 	// ) {
+	// 	// 	// Get the namespace
+	// 	// 	const namespace = entity.namespace.database.namespaces[namespaceName];
 
-			// Create where to save references
-			if (!entity.document._references) entity.document._references = {};
-			entity.document._references[propertyName] = new ReferenceArray(
-				namespace,
-				typeName,
-				required
-			);
+	// 	// 	// Get the model
+	// 	// 	const model =
+	// 	// 		entity.namespace.database.namespaces[namespaceName].getModel(typeName);
 
-			// Create a new property for this entity
-			Object.defineProperty(entity, propertyName, {
-				get() {
-					return entity.document._references[propertyName];
-				},
-			});
-		}
+	// 	// 	// Create where to save references
+	// 	// 	if (!entity.document._references) entity.document._references = {};
+	// 	// 	entity.document._references[propertyName] = new ReferenceList(
+	// 	// 		namespace,
+	// 	// 		typeName,
+	// 	// 		required
+	// 	// 	);
 
-		function createQueryMethod(
-			entity,
-			name,
-			functionName,
-			namespaceName,
-			typeName,
-			propertyName
-		) {
-			// Name of the method
-			var fName;
-			if (functionName) fName = functionName;
-			else fName = "get" + name[0].toUpperCase() + name.slice(1);
+	// 	// 	// Create a new property for this entity
+	// 	// 	Object.defineProperty(entity, propertyName, {
+	// 	// 		get() {
+	// 	// 			return entity.document._references[propertyName];
+	// 	// 		},
+	// 	// 	});
 
-			// Namespace
-			const namespace = entity.namespace.database.data[namespaceName];
+	// 	// 	return propertyName;
+	// 	// }
+	// 	// function createQueryMethod(
+	// 	// 	entity,
+	// 	// 	name,
+	// 	// 	functionName,
+	// 	// 	namespaceName,
+	// 	// 	typeName,
+	// 	// 	propertyName,
+	// 	// 	multiple
+	// 	// ) {
+	// 	// 	// Name of the method
+	// 	// 	var fName;
+	// 	// 	if (functionName) fName = functionName;
+	// 	// 	else fName = "get" + name[0].toUpperCase() + name.slice(1);
 
-			// Create the method
-			entity[fName] = async function () {
-				// Define the query
-				const query = {};
-				query[propertyName] = this.id;
+	// 	// 	// Namespace
+	// 	// 	const namespace = entity.namespace.database.data[namespaceName];
 
-				return await namespace[typeName].find(query);
-			};
+	// 	// 	// Create the method
+	// 	// 	entity[fName] = async function () {
+	// 	// 		// Define the query
+	// 	// 		const query = {};
+	// 	// 		if (multiple) {
+	// 	// 			query[propertyName] = { $in: this.id };
+	// 	// 		} else query[propertyName] = this.id;
 
-			// Create the index
-			namespace[typeName].defineIndex(name, [propertyName]);
-		}
+	// 	// 		return await namespace[typeName].find(query);
+	// 	// 	};
 
-		function getFullTypeName(value) {
-			var typeName;
-			if (typeof value === "string") typeName = value;
-			else typeName = value.typeName;
+	// 	// 	// Create the index
+	// 	// 	namespace[typeName].defineIndex(name, [propertyName]);
+	// 	// }
 
-			if (typeName.indexOf(".") === -1)
-				return {
-					namespace: entity.namespace.name,
-					typeName: typeName,
-				};
-			else
-				return {
-					namespace: typeName.split(".")[0],
-					typeName: typeName.split(".")[1],
-				};
-		}
+	// 	// function getFullTypeName(value) {
+	// 	// 	var typeName;
+	// 	// 	if (typeof value === "string") typeName = value;
+	// 	// 	else typeName = value.typeName;
 
-		// Check if left or right side
-		const leftFullTypeName = getFullTypeName(relationshipDefinition.left);
-		const isLeft =
-			leftFullTypeName.namespace === entity.namespace.name &&
-			leftFullTypeName.typeName === entity.model.typeName;
+	// 	// 	if (typeName.indexOf(".") === -1)
+	// 	// 		return {
+	// 	// 			namespace: entity.namespace.name,
+	// 	// 			typeName: typeName,
+	// 	// 		};
+	// 	// 	else
+	// 	// 		return {
+	// 	// 			namespace: typeName.split(".")[0],
+	// 	// 			typeName: typeName.split(".")[1],
+	// 	// 		};
+	// 	// }
 
-		const leftType = getFullTypeName(relationshipDefinition.left);
-		const rightType = getFullTypeName(relationshipDefinition.right);
+	// 	// Check if left or right side
 
-		switch (relationshipDefinition.type) {
-			case "one-to-many":
-				const rightPropertyName =
-					relationshipDefinition.right?.propertyName ||
-					relationshipDefinition.left?.typeName ||
-					relationshipDefinition.left;
-
-				if (isLeft) {
-					// Left side
-
-					createQueryMethod(
-						entity,
-						name,
-						relationshipDefinition.left?.methodName,
-						rightType.namespace,
-						rightType.typeName,
-						rightPropertyName
-					);
-				} else {
-					// Right side
-					createReferenceProperty(
-						entity,
-						rightPropertyName,
-						leftType.namespace,
-						leftType.typeName,
-						relationshipDefinition.required
-					);
-				}
-				break;
-
-			case "many-to-many":
-				if (isLeft) {
-					// Left side
-
-					const rightPropertyName =
-						relationshipDefinition.left?.propertyName ||
-						relationshipDefinition.right?.typeName ||
-						relationshipDefinition.right;
-
-					createArrayOfReferenceProperty(
-						entity,
-						rightPropertyName + "List",
-						rightType.namespace,
-						rightType.typeName,
-						relationshipDefinition.required
-					);
-				} else {
-					// Right side
-
-					const leftPropertyName =
-						relationshipDefinition.right?.propertyName ||
-						relationshipDefinition.left?.typeName ||
-						relationshipDefinition.left;
-
-					createArrayOfReferenceProperty(
-						entity,
-						leftPropertyName + "List",
-						leftType.namespace,
-						leftType.typeName,
-						relationshipDefinition.required
-					);
-				}
-
-				break;
-
-			default:
-				break;
-		}
-	}
+	// 	// Implement the relationship
+	// }
 
 	// Create an attachment
 	createAttachment(entity, name, attachmentDefinition) {
