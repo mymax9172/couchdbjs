@@ -434,7 +434,7 @@ export class EntityFactory {
 			let req = getValueOrFunction(propertyDefinition.required, entity);
 			if (req) {
 				if (value == null)
-					throw new Error("Missing required value, null or undefined");
+					throw new Error("Missing required value, null or undefined " + name);
 				if (typeof value === "string" && value.length === 0)
 					throw new Error("Missing required value, empty string");
 				if (typeof value === "object") {

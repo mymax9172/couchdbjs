@@ -1,6 +1,8 @@
 import { StandardTypes } from "../src/model/standardTypes.js";
 
 const CapitalizedPropertyType = {
+	...StandardTypes.BasePropertyType,
+
 	name: "CapitilizedText",
 
 	// Capitilize text before storing
@@ -17,6 +19,8 @@ const CapitalizedPropertyType = {
 };
 
 const ZipCodePropertyType = {
+	...StandardTypes.BasePropertyType,
+
 	name: "ZipcodeText",
 
 	rules: [
@@ -27,7 +31,7 @@ const ZipCodePropertyType = {
 
 const User1 = {
 	typeName: "user1",
-	singleton: false,
+	service: "collection",
 	properties: {
 		username: {},
 		password: {
@@ -38,7 +42,7 @@ const User1 = {
 
 const User2 = {
 	typeName: "user2",
-	singleton: false,
+	service: "collection",
 	properties: {
 		username: {},
 		password: {
@@ -59,7 +63,7 @@ const User2 = {
 
 const Contact = {
 	typeName: "contact",
-	singleton: false,
+	service: "collection",
 	properties: {
 		zipCode: {
 			type: ZipCodePropertyType,
@@ -80,7 +84,7 @@ const Contact = {
 
 const User = {
 	typeName: "user",
-	singleton: false,
+	service: "collection",
 	properties: {
 		username: {},
 		password: {
@@ -102,7 +106,7 @@ const User = {
 
 const House = {
 	typeName: "house",
-	singleton: false,
+	service: "collection",
 	properties: {
 		addresses: {
 			type: StandardTypes.TextPropertyType,
@@ -125,7 +129,7 @@ const House = {
 
 const Company = {
 	typeName: "company",
-	singleton: false,
+	service: "collection",
 	properties: {
 		address: {},
 		user: {
@@ -140,7 +144,7 @@ const Company = {
 
 const Organization = {
 	typeName: "organization",
-	singleton: false,
+	service: "collection",
 	properties: {
 		company: {
 			model: "company",
@@ -150,18 +154,13 @@ const Organization = {
 
 const Project = {
 	typeName: "project",
-	singleton: false,
-	properties: {
-		// authors: {
-		// 	reference: "user",
-		// 	multiple: true,
-		// },
-	},
+	service: "collection",
+	properties: {},
 };
 
 const Contract = {
 	typeName: "contract",
-	singleton: false,
+	service: "collection",
 	properties: {
 		customer: {},
 	},
@@ -183,17 +182,21 @@ export const ExampleDbSchema = {
 	version: 1,
 
 	namespaces: {
-		default: [
-			User1,
-			User2,
-			Contact,
-			User,
-			House,
-			Company,
-			Organization,
-			Project,
-			Contract,
-		],
+		default: {
+			title: "Default",
+			description: "Default namespace",
+			models: [
+				User1,
+				User2,
+				Contact,
+				User,
+				House,
+				Company,
+				Organization,
+				Project,
+				Contract,
+			],
+		},
 	},
 
 	relationships: {

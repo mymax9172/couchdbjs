@@ -6,6 +6,10 @@ export class Namespace {
 	// Name of the context
 	name;
 
+	// Abstract of the namespace
+	title;
+	description;
+
 	// Models
 	models = {};
 

@@ -5,7 +5,8 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"test": "mocha -t 5000"
+		"test": "mocha -t 5000",
+		"sample": "node ./sample/index.js"
 	},
 	"author": "MyMax1972",
 	"license": "ISC",
@@ -16,6 +17,7 @@
 		"pouchdb-find": "^9.0.0"
 	},
 	"devDependencies": {
+		"@faker-js/faker": "^8.4.1",
 		"chai": "^5.1.1"
 	}
 }

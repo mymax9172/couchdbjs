@@ -21,10 +21,6 @@ export class DataService {
 		return this.namespace.createEntity(this.typeName);
 	}
 
-	// async getAttachment(docId, attachmentName) {
-	// 	return await this.database.attachment.get(docId, attachmentName);
-	// }
-
 	async save(entity) {
 		// Validation
 		try {
@@ -47,6 +43,40 @@ export class DataService {
 			const result = await this.namespace.database.pouchDb.put(json);
 			if (result.ok) entity.document._rev = result.rev;
 
+			return result;
+		} catch (error) {
+			console.error(error);
+			return null;
+		}
+	}
+
+	async saveAll(entities) {
+		if (entities == null || entities.length === 0) return;
+		const model = entities[0].model;
+
+		// Validation
+		try {
+			entities.forEach((entity) => {
+				entity.validate;
+			});
+		} catch (error) {
+			throw new Error(
+				"Validation error of type " + model.typeName + ": " + error
+			);
+		}
+
+		try {
+			// Save it
+			const docs = [];
+			entities.forEach((entity) => {
+				const json = entity.export();
+				docs.push(json);
+			});
+
+			const result = await this.namespace.database.pouchDb.bulkDocs(docs);
+			result.forEach((resultItem, index) => {
+				if (resultItem.ok) entities[index].document._rev = resultItem.rev;
+			});
 			return result;
 		} catch (error) {
 			console.error(error);

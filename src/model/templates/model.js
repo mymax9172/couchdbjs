@@ -2,14 +2,25 @@ export const Model = {
 	// Name of the model
 	typeName: "",
 
-	// Singleton (or collection)
-	singleton: false,
+	// Title and description (abstract)
+	title: "",
+	description: "",
+
+	// Service level
+	// None, entity is not saved into the database but enbedded into other entities
+	// Singleton, one entity can exist into the database
+	// Collection, multiple entities can be saved into the database
+	service: "collection",
+
+	// Internal model is never saved as standalone document (but inside other documents)
+	internal: false,
 
 	// Properties
 	properties: {
 		name: {
-			// Short description of the field
-			description: "abstract of the fiels",
+			// Title and description (abstract)
+			title: "Name",
+			description: "Name of the entity...",
 
 			// (optional) Default value, could be a static value or a function
 			default: "something",
@@ -65,6 +76,11 @@ export const Model = {
 
 			// (optional) Multiple, true if multiple values are accepted
 			multiple: false,
+
+			// String formatted
+			toString() {
+				return this;
+			},
 		},
 	},
 

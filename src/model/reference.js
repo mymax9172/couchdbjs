@@ -18,6 +18,11 @@ export class Reference {
 
 		this.model = this.namespace.getModel(typeName);
 		this.service = this.namespace.getService(typeName);
+
+		if (this.model.service === "none")
+			throw new Error(
+				"Coulnd't create a reference to a non persisted entity (service = none)"
+			);
 	}
 
 	set(value) {
@@ -32,10 +37,10 @@ export class Reference {
 			if (this.required && (id == null || id.length === 0))
 				throw new Error("Id is required");
 			const s = id.split("/");
-			if (this.model.singleton && s.length != 2)
-				throw new Error("Invalid id for singleton type, " + id);
-			if (!this.model.singleton && s.length != 3)
-				throw new Error("Invalid id for collecton type, " + id);
+			if (this.model.service === "singleton" && s.length != 2)
+				throw new Error("Invalid id for singleton service type, " + id);
+			if (this.model.service === "collection" && s.length != 3)
+				throw new Error("Invalid id for collecton service type, " + id);
 			if (s[0] !== this.namespace.name)
 				throw new Error("Invalid id with wrong namespace, " + id);
 			if (s[1] !== this.typeName)

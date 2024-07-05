@@ -61,7 +61,7 @@ class Migration1to1 extends Migration {
 
 const userModel = {
 	typeName: "user",
-	singleton: false,
+	service: "collection",
 	properties: {
 		firstName: {},
 		lastName: {},
@@ -78,7 +78,7 @@ const schema2 = {
 	version: 2,
 
 	namespaces: {
-		default: [userModel],
+		default: { title: "default", decription: "default", models: [userModel] },
 	},
 };
 
@@ -87,7 +87,6 @@ describe("Migrations", function () {
 	const server = new CouchServer(process.env.URL, process.env.PORT, {
 		username: process.env.USER,
 		password: process.env.PASSWORD,
-		token: process.env.TOKEN,
 	});
 
 	// Test database

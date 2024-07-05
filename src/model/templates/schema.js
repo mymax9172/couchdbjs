@@ -5,7 +5,11 @@ export const Schema = {
 	// Namespaces
 	namespaces: {
 		// Name of the namespace and array of models
-		security: [Model1, Model2],
+		security: {
+			title: "Security",
+			description: "Manage data security, authentication and authoization",
+			models: [Model1, Model2],
+		},
 	},
 
 	// Relationships

@@ -32,15 +32,19 @@ export class Entity {
 			_attachments: {},
 		};
 
-		if (model.singleton) {
-			this.document._id = this.fullTypeName;
-		} else {
-			this.document._id =
-				this.fullTypeName +
-				"/" +
-				Date.now() +
-				"-" +
-				String(Math.floor(Math.random() * 1000)).padStart(4, "0");
+		switch (model.service) {
+			case "singleton":
+				this.document._id = this.fullTypeName;
+				break;
+
+			case "none":
+			case "collection":
+				this.document._id =
+					this.fullTypeName +
+					"/" +
+					Date.now() +
+					"-" +
+					String(Math.floor(Math.random() * 1000)).padStart(4, "0");
 		}
 	}
 
@@ -232,5 +236,10 @@ export class Entity {
 		const service = this.namespace.getService(this.model.typeName);
 		const entity = await service.get(this.id);
 		Object.assign(this, entity);
+	}
+
+	hasAttachments() {
+		if (!this.document._attachments) return false;
+		return Object.keys(this.document._attachments).length > 0;
 	}
 }

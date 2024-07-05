@@ -75,8 +75,10 @@ export class CouchDatabase {
 
 			const namespace = new Namespace();
 			namespace.name = namespaceKey;
+			namespace.title = namespaceDefinition.title;
+			namespace.description = namespaceDefinition.description;
 
-			namespaceDefinition.forEach((model) => {
+			namespaceDefinition.models.forEach((model) => {
 				namespace.useModel(coding.deserialize(model));
 			});
 
@@ -133,18 +135,28 @@ export class CouchDatabase {
 			// Model
 			const model = namespace.models[modelName];
 
-			// Create a property for the service provider into the database instance
+			// Service levels
 			const serviceName = model.typeName;
-			if (model.singleton) {
-				serviceSpace[serviceName] = new SingletonService(
-					namespace,
-					model.typeName
-				);
-			} else {
-				serviceSpace[serviceName] = new CollectionService(
-					namespace,
-					model.typeName
-				);
+			switch (model.service) {
+				case "none":
+					// Skip if it is internal
+					return;
+
+				case "singleton":
+					serviceSpace[serviceName] = new SingletonService(
+						namespace,
+						model.typeName
+					);
+					break;
+
+				case "collection":
+					serviceSpace[serviceName] = new CollectionService(
+						namespace,
+						model.typeName
+					);
+					break;
+				default:
+					break;
 			}
 		});
 	}

@@ -1,6 +1,6 @@
 const ownerModel = {
 	typeName: "owner",
-	singleton: true,
+	service: "singleton",
 	properties: {
 		firstName: {
 			default: "default name",
@@ -16,7 +16,7 @@ const ownerModel = {
 
 const userModel = {
 	typeName: "user",
-	singleton: false,
+	service: "collection",
 	properties: {
 		firstName: {
 			default: "default name",
@@ -34,6 +34,10 @@ export const SampleDbSchema = {
 	version: 1,
 
 	namespaces: {
-		default: [ownerModel, userModel],
+		default: {
+			title: "Default",
+			description: "Default namespace",
+			models: [ownerModel, userModel]
+		}
 	},
 };

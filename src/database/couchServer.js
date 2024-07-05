@@ -5,6 +5,7 @@ import { CouchDatabase } from "./couchDatabase.js";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 import { coding } from "../helpers/coding.js";
 import { Relationship } from "./relationship.js";
+import { Buffer } from "buffer";
 
 /**
  * Server class for a CouchDB server
@@ -47,7 +48,8 @@ export class CouchServer {
 		if (config?.secretKey) this.config.secretKey = config.secretKey;
 		if (config?.username) this.config.username = config.username;
 		if (config?.password) this.config.password = config.password;
-		if (config?.token) this.config.token = config.token;
+		this.config.token =
+			"Basic " + btoa(this.config.username + ":" + this.config.password);
 	}
 
 	/**

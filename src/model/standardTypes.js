@@ -1,17 +1,11 @@
-const BooleanPropertyType = {
-	name: "Boolean",
+const BasePropertyType = {
+	name: "",
 
-	rules: [
-		(val) => typeof val === "boolean" || "Value " + val + " is not a boolean",
-	],
-};
+	rules: [],
 
-const DateTimePropertyType = {
-	name: "DateTime",
-
-	rules: [
-		(val) => val instanceof Date || "Value " + val + " is not a Date object",
-	],
+	format(value, options) {
+		return value;
+	},
 
 	/**
 	 * Hook before writing on the document
@@ -19,8 +13,7 @@ const DateTimePropertyType = {
 	 * @returns {*} Trasformed value
 	 */
 	beforeWrite(value) {
-		if (!value) return value;
-		return value.getTime();
+		return value;
 	},
 
 	/**
@@ -29,12 +22,48 @@ const DateTimePropertyType = {
 	 * @returns {*} Trasformed value for the UI
 	 */
 	afterRead(value) {
+		return value;
+	},
+};
+
+const BooleanPropertyType = {
+	...BasePropertyType,
+
+	name: "Boolean",
+
+	rules: [
+		(val) => typeof val === "boolean" || "Value " + val + " is not a boolean",
+	],
+};
+
+const DateTimePropertyType = {
+	...BasePropertyType,
+
+	name: "DateTime",
+
+	rules: [
+		(val) => val instanceof Date || "Value " + val + " is not a Date object",
+	],
+
+	beforeWrite(value) {
+		if (!value) return value;
+		return value.getTime();
+	},
+
+	afterRead(value) {
 		if (!value) return value;
 		return new Date(value);
+	},
+
+	format(value, options) {
+		const formatter = new Intl.DateTimeFormat(options.locale, options.format);
+		return formatter.format(value);
 	},
 };
 
 const IntegerPropertyType = {
+	...BasePropertyType,
+
 	name: "Integer",
 
 	rules: [
@@ -43,6 +72,8 @@ const IntegerPropertyType = {
 };
 
 const TextPropertyType = {
+	...BasePropertyType,
+
 	name: "Text",
 
 	rules: [
@@ -51,6 +82,8 @@ const TextPropertyType = {
 };
 
 const NumberPropertyType = {
+	...BasePropertyType,
+
 	name: "Number",
 
 	rules: [
@@ -59,6 +92,7 @@ const NumberPropertyType = {
 };
 
 export const StandardTypes = {
+	BasePropertyType,
 	BooleanPropertyType,
 	DateTimePropertyType,
 	IntegerPropertyType,

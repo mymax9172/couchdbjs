@@ -10,7 +10,6 @@ describe("Database class", function () {
 	const server = new CouchServer(process.env.URL, process.env.PORT, {
 		username: process.env.USER,
 		password: process.env.PASSWORD,
-		token: process.env.TOKEN,
 	});
 
 	// Test database
