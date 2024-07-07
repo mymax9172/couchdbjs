@@ -200,12 +200,13 @@ export class Entity {
 				const name = attName.split("|")[0];
 				const filename = attName.split("|")[1];
 				const contentType = doc._attachments[attName].content_type;
+				const size = doc._attachments[attName].length;
 
 				// Get the attachment object
 				const attachment = this[name];
 
 				// Define the stub
-				attachment.defineStub(filename, contentType);
+				attachment.defineStub(filename, contentType, size);
 			});
 		}
 

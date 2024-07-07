@@ -4,11 +4,13 @@ class AttachmentFile {
 	stub;
 	data;
 	attachment;
+	size;
 
-	constructor(attachment, filename, contentType, data) {
+	constructor(attachment, filename, contentType, size, data) {
 		this.attachment = attachment;
 		this.filename = filename;
 		this.contentType = contentType;
+		this.size = size;
 		if (data) {
 			this.data = data;
 			this.stub = false;
@@ -63,7 +65,7 @@ export class Attachment {
 		return this.files.find((e) => e.filename === filename);
 	}
 
-	defineStub(filename, contentType) {
+	defineStub(filename, contentType, size) {
 		// Check contentTypes
 		if (this.filters && !this.filters.includes(contentType))
 			throw new Error("Content type not allowed");
@@ -81,7 +83,7 @@ export class Attachment {
 			throw new Error("File stub already exists");
 
 		// Create a stub file
-		this.files.push(new AttachmentFile(this, filename, contentType));
+		this.files.push(new AttachmentFile(this, filename, contentType, size));
 	}
 
 	load(filename, data) {
@@ -99,9 +101,9 @@ export class Attachment {
 		file.data = data;
 	}
 
-	add(filename, contentType, data) {
+	add(filename, contentType, size, data) {
 		// Create a stub
-		this.defineStub(filename, contentType);
+		this.defineStub(filename, contentType, size);
 
 		// Load the file
 		this.load(filename, data);
