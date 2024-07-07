@@ -235,162 +235,11 @@ export class EntityFactory {
 					}
 				}
 
-				// if (propertyDefinition.reference) {
-				// 	// In case of references
-				// 	// Recreate the entity / array of entity
-				// 	const namespaceName =
-				// 		propertyDefinition.namespace || factory.namespace.name;
-				// 	const namespace =
-				// 		factory.namespace.database.namespaces[namespaceName];
-				// 	const typeName = propertyDefinition.reference;
-
-				// 	if (propertyDefinition.multiple) {
-				// 		if (!entity.document.hasOwnProperty("_references"))
-				// 			entity.document._references = {};
-
-				// 		entity.document[name] = [];
-				// 		// Array
-				// 		updValue.forEach((element) => {
-				// 			entity.refs[name].push(
-				// 				createReference(element, namespace, typeName)
-				// 			);
-				// 		});
-				// 	} else {
-				// 		// Single value
-				// 		entity.refs[name] = createReference(updValue, namespace, typeName);
-				// 	}
-				// }
-
 				// Store value in the document
 				writeValue(updValue);
 			},
 		});
 	}
-
-	// // Create a relationship
-	// createRelationship(entity, relationship) {
-	// 	// Check mandatory arguments
-	// 	checkMandatoryArgument("entity", entity);
-	// 	checkMandatoryArgument("relationship", relationship);
-
-	// 	relationship.implement(entity);
-
-	// 	// function createReferenceProperty(
-	// 	// 	entity,
-	// 	// 	propertyName,
-	// 	// 	namespaceName,
-	// 	// 	typeName,
-	// 	// 	required = false
-	// 	// ) {
-	// 	// 	// Get the namespace
-	// 	// 	const namespace = entity.namespace.database.namespaces[namespaceName];
-
-	// 	// 	// Create where to save references
-	// 	// 	if (!entity.document._references) entity.document._references = {};
-	// 	// 	entity.document._references[propertyName] = new Reference(
-	// 	// 		namespace,
-	// 	// 		typeName,
-	// 	// 		required
-	// 	// 	);
-
-	// 	// 	// Create a new property for this entity
-	// 	// 	Object.defineProperty(entity, propertyName, {
-	// 	// 		get() {
-	// 	// 			return entity.document._references[propertyName];
-	// 	// 		},
-	// 	// 		set(value) {
-	// 	// 			if (value instanceof Entity)
-	// 	// 				entity.document._references[propertyName].id = value.id;
-	// 	// 			else entity.document._references[propertyName].id = value;
-	// 	// 		},
-	// 	// 	});
-
-	// 	// 	return propertyName;
-	// 	// }
-	// 	// function createReferenceListProperty(
-	// 	// 	entity,
-	// 	// 	propertyName,
-	// 	// 	namespaceName,
-	// 	// 	typeName,
-	// 	// 	required = false
-	// 	// ) {
-	// 	// 	// Get the namespace
-	// 	// 	const namespace = entity.namespace.database.namespaces[namespaceName];
-
-	// 	// 	// Get the model
-	// 	// 	const model =
-	// 	// 		entity.namespace.database.namespaces[namespaceName].getModel(typeName);
-
-	// 	// 	// Create where to save references
-	// 	// 	if (!entity.document._references) entity.document._references = {};
-	// 	// 	entity.document._references[propertyName] = new ReferenceList(
-	// 	// 		namespace,
-	// 	// 		typeName,
-	// 	// 		required
-	// 	// 	);
-
-	// 	// 	// Create a new property for this entity
-	// 	// 	Object.defineProperty(entity, propertyName, {
-	// 	// 		get() {
-	// 	// 			return entity.document._references[propertyName];
-	// 	// 		},
-	// 	// 	});
-
-	// 	// 	return propertyName;
-	// 	// }
-	// 	// function createQueryMethod(
-	// 	// 	entity,
-	// 	// 	name,
-	// 	// 	functionName,
-	// 	// 	namespaceName,
-	// 	// 	typeName,
-	// 	// 	propertyName,
-	// 	// 	multiple
-	// 	// ) {
-	// 	// 	// Name of the method
-	// 	// 	var fName;
-	// 	// 	if (functionName) fName = functionName;
-	// 	// 	else fName = "get" + name[0].toUpperCase() + name.slice(1);
-
-	// 	// 	// Namespace
-	// 	// 	const namespace = entity.namespace.database.data[namespaceName];
-
-	// 	// 	// Create the method
-	// 	// 	entity[fName] = async function () {
-	// 	// 		// Define the query
-	// 	// 		const query = {};
-	// 	// 		if (multiple) {
-	// 	// 			query[propertyName] = { $in: this.id };
-	// 	// 		} else query[propertyName] = this.id;
-
-	// 	// 		return await namespace[typeName].find(query);
-	// 	// 	};
-
-	// 	// 	// Create the index
-	// 	// 	namespace[typeName].defineIndex(name, [propertyName]);
-	// 	// }
-
-	// 	// function getFullTypeName(value) {
-	// 	// 	var typeName;
-	// 	// 	if (typeof value === "string") typeName = value;
-	// 	// 	else typeName = value.typeName;
-
-	// 	// 	if (typeName.indexOf(".") === -1)
-	// 	// 		return {
-	// 	// 			namespace: entity.namespace.name,
-	// 	// 			typeName: typeName,
-	// 	// 		};
-	// 	// 	else
-	// 	// 		return {
-	// 	// 			namespace: typeName.split(".")[0],
-	// 	// 			typeName: typeName.split(".")[1],
-	// 	// 		};
-	// 	// }
-
-	// 	// Check if left or right side
-
-	// 	// Implement the relationship
-	// }
 
 	// Create an attachment
 	createAttachment(entity, name, attachmentDefinition) {
@@ -427,6 +276,9 @@ export class EntityFactory {
 	 * @param {*} name Name of the property
 	 */
 	validatePropertyValue(value, entity, name) {
+		//Skipped if draft
+		if (entity.draft) return;
+
 		const propertyDefinition = entity.model.properties[name];
 
 		// Check required attribute
@@ -460,11 +312,11 @@ export class EntityFactory {
 			}
 
 			value.validate();
-		} else if (propertyDefinition.reference) {
-			// Value should be a reference
-			if (typeof value != "string") {
-				throw new Error("Expected reference (string)");
-			}
+			// } else if (propertyDefinition.reference) {
+			// 	// Value should be a reference
+			// 	if (typeof value != "string") {
+			// 		throw new Error("Expected reference (string)");
+			// 	}
 		} else {
 			// Static values
 
@@ -490,6 +342,53 @@ export class EntityFactory {
 					throw new Error("Invalid value: " + result);
 			}
 		}
+	}
+
+	/**
+	 * Return all rules applicable
+	 * @param {Entity} entity Entity to be validated
+	 * @param {String} name Property name
+	 */
+	getValidationRules(entity, name) {
+		const propertyDefinition = entity.model.properties[name];
+		const rules = [];
+
+		if (propertyDefinition.computed) return rules;
+
+		// Check required attribute
+		if (propertyDefinition.hasOwnProperty("required")) {
+			let req = getValueOrFunction(propertyDefinition.required, entity);
+			if (req) {
+				const conditions = [];
+				conditions.push((value) => value == null || "Required value");
+
+				rules.push((value) => {
+					if (
+						value == null ||
+						(typeof value === "string" && value.length === 0) ||
+						(typeof value === "object" &&
+							Array.isArray(value) &&
+							value.length === 0) ||
+						(typeof value === "object" &&
+							value.constructor === Object &&
+							Object.keys(value).length === 0)
+					)
+						return "Required value";
+					else return true;
+				});
+			}
+		}
+
+		if (propertyDefinition.type) {
+			// Check property type rules
+			const propertyType = propertyDefinition.type;
+
+			if (propertyType.rules) rules.push(...propertyType.rules);
+		}
+
+		if (propertyDefinition.rules) rules.push(...propertyDefinition.rules);
+
+		return rules;
 	}
 
 	/**

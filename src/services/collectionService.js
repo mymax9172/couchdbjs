@@ -2,28 +2,6 @@ import { Attachment } from "../model/attachment.js";
 import { DataService } from "./dataService.js";
 
 export class CollectionService extends DataService {
-	async get(id) {
-		try {
-			// Read the document
-			const doc = await this.namespace.database.pouchDb.get(id, {
-				revs_info: true,
-				//attachments: true,
-			});
-
-			// if (id.startsWith("default/contract")) {
-			// 	console.log(doc);
-			// }
-
-			// Trasform into an entity
-			const entity = this.namespace.createEntity(this.typeName);
-			entity.import(doc);
-			return entity;
-		} catch (error) {
-			console.log(error);
-			throw error;
-		}
-	}
-
 	async getAll() {
 		try {
 			var result = await this.namespace.database.pouchDb.allDocs({
@@ -62,15 +40,6 @@ export class CollectionService extends DataService {
 			console.log(error);
 			throw error;
 		}
-	}
-
-	async delete(id) {
-		const entity = await this.get(id);
-		if (entity != null)
-			return await this.namespace.database.pouchDb.remove(
-				entity.id,
-				entity.rev
-			);
 	}
 
 	async find(query, pagination) {

@@ -47,6 +47,12 @@ describe("Entity class", function () {
 		entity.should.have.property("identifier", "pwd/password");
 	});
 
+	it("Use a multiple property", function () {
+		const entity = namespace.createEntity("user2");
+		entity.zips.push("lallo");
+		expect(() => entity.validate()).to.throw();
+	});
+
 	it("Use a PropertyType to capitilize texts", function () {
 		const entity = namespace.createEntity("user2");
 		entity.lastName = "Sullivan";

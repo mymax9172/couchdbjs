@@ -15,6 +15,9 @@ export class Entity {
 	// Relationships
 	relationships;
 
+	// Set to true to pause validations
+	draft = false;
+
 	/**
 	 * Create a new entity
 	 * Do not call this method directly, use createEntity method in namespace
@@ -48,6 +51,7 @@ export class Entity {
 		}
 	}
 
+
 	/**
 	 * ID system property
 	 * */
@@ -68,6 +72,15 @@ export class Entity {
 	get fullTypeName() {
 		return this.namespace.name + "/" + this.model.typeName;
 	}
+
+	/**
+	 * Key part of the id
+	 */
+	get key() {
+		const splitId = this.id.split("/");
+		if (splitId.length === 2) return "";
+		else return splitId[2];
+	}
 	/**
 	 * Check if the entity is deleted
 	 * @returns {boolean} True if the entity has been deleted
@@ -85,11 +98,19 @@ export class Entity {
 		else return this.fullTypeName;
 	}
 
+	getRules(propertyName) {
+		const factory = new EntityFactory(this.namespace, this.model.typeName);
+		return factory.getValidationRules(this, propertyName);
+	}
+
 	/**
 	 * Validate the content of the entity
 	 * @returns {boolean} True if validation passed
 	 */
 	validate() {
+		// Skipped if draft
+		if (this.draft) return true;
+
 		const factory = new EntityFactory(this.namespace, this.model.typeName);
 
 		// Check properties

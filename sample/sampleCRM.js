@@ -76,6 +76,14 @@ const Contact = {
 			type: StandardTypes.TextPropertyType,
 			required: true,
 		},
+		fullName: {
+			title: "Full name",
+			description: "Full name (first and last name)",
+			type: StandardTypes.TextPropertyType,
+			computed() {
+				return this.firstName + " " + this.lastName;
+			},
+		},
 		active: {
 			title: "Active",
 			description: "Active contact can be used for interactions",
@@ -108,6 +116,11 @@ const User = {
 			type: StandardTypes.BooleanPropertyType,
 			required: true,
 			default: true,
+		},
+	},
+	attachments: {
+		picture: {
+			filters: ["image/jpeg"],
 		},
 	},
 };

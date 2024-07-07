@@ -2,12 +2,14 @@ import { CouchServer } from "../src/database/couchServer.js";
 import { SampleCRMSchema } from "./sampleCRM.js";
 import { faker } from "@faker-js/faker";
 import "dotenv/config";
+import * as fs from "fs";
 
 // Sample database
 const dbName = "sample-crm";
 const settings = {
-	users: 20,
+	users: 10,
 	companies: 50,
+	contacts: 100,
 };
 
 // Create a server instance
@@ -39,9 +41,18 @@ for (let i = 0; i < settings.users; i++) {
 	const item = database.data.security.user.create();
 	item.username = faker.internet.userName();
 	item.password = faker.internet.password();
+
+	const response = await fetch("https://thispersondoesnotexist.com");
+	if (response.ok) {
+		const blob = await response.blob();
+		const buffer = Buffer.from(await blob.arrayBuffer());
+		item.picture.add("picture.jpeg", "image/jpeg", buffer);
+	}
+
 	users.push(item);
 }
 await database.data.security.user.saveAll(users);
+console.log(settings.users + " users created");
 
 // Create companies
 const companies = [];
@@ -60,3 +71,15 @@ for (let i = 0; i < settings.companies; i++) {
 	companies.push(item);
 }
 await database.data.business.company.saveAll(companies);
+console.log(settings.companies + " companies created");
+
+// Create contacts
+const contacts = [];
+for (let i = 0; i < settings.contacts; i++) {
+	const item = database.data.business.contact.create();
+	item.firstName = faker.person.firstName();
+	item.lastName = faker.person.lastName();
+	contacts.push(item);
+}
+await database.data.business.contact.saveAll(contacts);
+console.log(settings.contacts + " contacts created");

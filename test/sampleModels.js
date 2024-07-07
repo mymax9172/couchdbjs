@@ -4,6 +4,7 @@ const CapitalizedPropertyType = {
 	...StandardTypes.BasePropertyType,
 
 	name: "CapitilizedText",
+	contentType: "string",
 
 	// Capitilize text before storing
 	beforeWrite(value) {
@@ -22,6 +23,7 @@ const ZipCodePropertyType = {
 	...StandardTypes.BasePropertyType,
 
 	name: "ZipcodeText",
+	contentType: "string",
 
 	rules: [
 		(value) =>
@@ -57,6 +59,10 @@ const User2 = {
 		},
 		lastName: {
 			type: CapitalizedPropertyType,
+		},
+		zips: {
+			type: ZipCodePropertyType,
+			multiple: true,
 		},
 	},
 };

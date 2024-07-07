@@ -21,6 +21,43 @@ export class DataService {
 		return this.namespace.createEntity(this.typeName);
 	}
 
+	/**
+	 * Retrieve a document by its own id
+	 * @param {string} id ID of the document
+	 * @param {object} options Options
+	 * @returns {Promise<Entity|Object>} Entity retrieved (or an object with the original document and the entity)
+	 */
+	async get(id, options) {
+		try {
+			// Read options
+			const opts = {};
+			if (options?.revisions) opts.revs_info = true;
+			if (options?.attachments) opts.attachments = true;
+
+			// Read the document
+			const doc = await this.namespace.database.pouchDb.get(id, opts);
+
+			// Trasform into an entity
+			const entity = this.namespace.createEntity(this.typeName);
+			entity.import(doc);
+
+			if (options?.original) {
+				return {
+					doc,
+					entity,
+				};
+			} else return entity;
+		} catch (error) {
+			console.log(error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Save an entity 
+	 * @param {Entity} entity Entity to be saved
+	 * @returns {Promise<object>} Result of the action
+	 */
 	async save(entity) {
 		// Validation
 		try {
@@ -50,6 +87,11 @@ export class DataService {
 		}
 	}
 
+	/**
+	 * Save many entities at once
+	 * @param {Array<Entity>} entities Entities to be saves
+	 * @returns {Promise<Array<object>>} Result of the action
+	 */
 	async saveAll(entities) {
 		if (entities == null || entities.length === 0) return;
 		const model = entities[0].model;
@@ -82,6 +124,20 @@ export class DataService {
 			console.error(error);
 			return null;
 		}
+	}
+
+	/**
+	 * Delete an entity (logical deletion)
+	 * @param {String} id ID of the entity
+	 * @returns {Promise<object>} Result of the action
+	 */
+	async delete(id) {
+		const entity = await this.get(id);
+		if (entity != null)
+			return await this.namespace.database.pouchDb.remove(
+				entity.id,
+				entity.rev
+			);
 	}
 
 	// Define an index
