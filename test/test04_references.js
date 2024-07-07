@@ -106,6 +106,7 @@ describe("References", function () {
 	it("Load entity with references", async function () {
 		const p = await db.data.default.project.get(project.id);
 
+		p.userList.get()[0].id === project.userList.get()[0].id;
 		expect(p.userList.get()[0].id === project.userList.get()[0].id).to.be.true;
 		//console.log(project.userList.references[0].get());
 	});

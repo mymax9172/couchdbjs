@@ -201,7 +201,7 @@ export class Relationship {
 		if (typeof value === "string") typeName = value;
 		else typeName = value.typeName;
 
-		const split = typeName.split(".");
+		const split = typeName.split("/");
 		if (split.length != 2)
 			throw new Error("Invalid full typename [namespace.typename]");
 

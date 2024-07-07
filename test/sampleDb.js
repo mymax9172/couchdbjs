@@ -37,7 +37,7 @@ export const SampleDbSchema = {
 		default: {
 			title: "Default",
 			description: "Default namespace",
-			models: [ownerModel, userModel]
-		}
+			models: [ownerModel, userModel],
+		},
 	},
 };

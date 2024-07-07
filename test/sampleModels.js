@@ -139,10 +139,10 @@ const Company = {
 	properties: {
 		address: {},
 		user: {
-			model: "user",
+			model: "default/user",
 		},
 		managers: {
-			model: "user",
+			model: "default/user",
 			multiple: true,
 		},
 	},
@@ -153,7 +153,7 @@ const Organization = {
 	service: "collection",
 	properties: {
 		company: {
-			model: "company",
+			model: "default/company",
 		},
 	},
 };
@@ -208,27 +208,27 @@ export const ExampleDbSchema = {
 	relationships: {
 		companyProjects: {
 			type: "one-to-many",
-			left: "default.company",
-			right: "default.project",
+			left: "default/company",
+			right: "default/project",
 			required: true,
 		},
 
 		organizationProjects: {
 			type: "one-to-many",
 			left: {
-				typeName: "default.company",
+				typeName: "default/company",
 				queryName: "myProjects",
 			},
 			right: {
-				typeName: "default.project",
+				typeName: "default/project",
 				propertyName: "organization",
 			},
 		},
 
 		projectsAuthors: {
 			type: "many-to-many",
-			left: "default.project",
-			right: "default.user",
+			left: "default/project",
+			right: "default/user",
 		},
 	},
 };

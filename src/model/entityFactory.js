@@ -30,9 +30,6 @@ export class EntityFactory {
 	 * Create and instance a new entity class
 	 */
 	create() {
-		// Retrive the schema
-		const schema = this.namespace.database.schema;
-
 		// Retrieve the model
 		const model = this.namespace.getModel(this.typeName);
 
@@ -164,39 +161,17 @@ export class EntityFactory {
 					const value = readValue(entity.document[name]);
 
 					// Return empty value as it is
-					if (!value) return value;
-
-					// Check if it is a model
-					if (propertyDefinition.model) {
-						// Recreate the entity / array of entity
-						const namespaceName =
-							propertyDefinition.namespace || factory.namespace.name;
-						const namespace =
-							factory.namespace.database.namespaces[namespaceName];
-						const typeName = propertyDefinition.model;
-
-						if (propertyDefinition.multiple) {
-							// Array
-							return value.map((element) =>
-								factory.parseEntity(element, namespace, typeName)
-							);
-						} else {
-							// Single value
-							return factory.parseEntity(value, namespace, typeName);
-						}
-					} else {
-						// Return as it is
-						return value;
-					}
+					return value;
 				}
 			},
 
 			// Setter
 			set(value) {
+				// console.log("setting property " + name + " to:", value);
 				let updValue = value;
 				let readonly = false;
 
-				if (propertyDefinition.hasOwnProperty("readonly"))
+				if (propertyDefinition.readonly)
 					readonly = getValueOrFunction(propertyDefinition.readonly, entity);
 
 				// Check if for this property 'set' is allowed
@@ -222,17 +197,6 @@ export class EntityFactory {
 				} else {
 					// Validation of one element
 					factory.validatePropertyValue(updValue, entity, name);
-				}
-
-				// In case of nested object
-				if (propertyDefinition.model) {
-					if (propertyDefinition.multiple) {
-						// In case of multiple values, get the inner document for each element
-						updValue = updValue.map((element) => element.export());
-					} else {
-						// If it is a model, get the inner document
-						updValue = updValue.export();
-					}
 				}
 
 				// Store value in the document
@@ -306,17 +270,14 @@ export class EntityFactory {
 			if (
 				value.constructor.name != "Entity" ||
 				!value.model ||
-				value.model.typeName != propertyDefinition.model
+				value.namespace.name != propertyDefinition.model.split("/")[0] ||
+				value.model.typeName != propertyDefinition.model.split("/")[1]
 			) {
 				throw new Error("Model mismatch, expected " + propertyDefinition.model);
 			}
 
 			value.validate();
-			// } else if (propertyDefinition.reference) {
-			// 	// Value should be a reference
-			// 	if (typeof value != "string") {
-			// 		throw new Error("Expected reference (string)");
-			// 	}
+
 		} else {
 			// Static values
 
@@ -391,19 +352,19 @@ export class EntityFactory {
 		return rules;
 	}
 
-	/**
-	 * Rehydrate an entity from its own document
-	 * @param {JSON} document Document
-	 * @param {Namespace} namespace Namespace instance
-	 * @param {String} typeName Name of the type
-	 * @returns {Entity} Entity from the given document
-	 */
-	parseEntity(document, namespace, typeName) {
-		const factory = new EntityFactory(namespace, typeName);
-		const entity = factory.create();
+	// /**
+	//  * Rehydrate an entity from its own document
+	//  * @param {JSON} document Document
+	//  * @param {Namespace} namespace Namespace instance
+	//  * @param {String} typeName Name of the type
+	//  * @returns {Entity} Entity from the given document
+	//  */
+	// parseEntity(document, namespace, typeName) {
+	// 	const factory = new EntityFactory(namespace, typeName);
+	// 	const entity = factory.create();
 
-		entity.import(document);
+	// 	entity.import(document);
 
-		return entity;
-	}
+	// 	return entity;
+	// }
 }

@@ -51,7 +51,6 @@ export class Entity {
 		}
 	}
 
-
 	/**
 	 * ID system property
 	 * */
@@ -155,13 +154,32 @@ export class Entity {
 	 * @param {JSON} doc Document to import
 	 */
 	import(doc) {
-		// Read CouchDB properties
-		const couchDbProperties = ["_id", "_rev", "_deleted"];
-		couchDbProperties.forEach((key) => (this.document[key] = doc[key]));
+		// Standard CouchDB fields
+		this.document._id = doc._id;
+		this.document._rev = doc._rev;
+		this.document._deleted = doc._deleted;
 
 		// Read all model properties
 		Object.keys(this.model.properties).forEach((propertyName) => {
-			this.document[propertyName] = doc[propertyName];
+			const propertyDefinition = this.model.properties[propertyName];
+
+			// In case of nested object
+			if (propertyDefinition.model) {
+				var value;
+				if (propertyDefinition.multiple) {
+					// In case of multiple values, get the inner document for each element
+					value = doc[propertyName].map((element) => {
+						this.hydrateEntity(propertyDefinition.model, element);
+					});
+				} else {
+					// If it is a model, get the inner document
+					value = this.hydrateEntity(
+						propertyDefinition.model,
+						doc[propertyName]
+					);
+				}
+				this.document[propertyName] = value;
+			} else this.document[propertyName] = doc[propertyName];
 		});
 
 		// Read all attachment stubs
@@ -205,14 +223,35 @@ export class Entity {
 	 * @returns {JSON} Json document to be saved in the CouchDB
 	 */
 	export() {
-		// Parse the inner document (without _attachment & _references property)
-		const document = JSON.parse(
-			JSON.stringify(this.document, (key, value) => {
-				if (key === "_attachments") return undefined;
-				if (key === "_references") return undefined;
-				else return value;
-			})
-		);
+		var document = {};
+
+		// Standard CouchDB fields
+		document._id = this.document._id;
+		document._rev = this.document._rev;
+		document._delete = this.document._delete;
+
+		Object.keys(this.model.properties).forEach((propertyName) => {
+			const propertyDefinition = this.model.properties[propertyName];
+
+			// Skip computed properties
+			if (propertyDefinition.computed) return;
+
+			if (propertyDefinition.model) {
+				var value;
+				if (propertyDefinition.multiple) {
+					// In case of multiple values, get the inner document for each element
+					value = this.document[propertyName].map((element) =>
+						element.export()
+					);
+				} else {
+					// If it is a model, get the inner document
+					if (this.document[propertyName])
+						value = this.document[propertyName].export();
+					else value = null;
+				}
+				document[propertyName] = value;
+			} else document[propertyName] = this.document[propertyName];
+		});
 
 		// Attachments
 		if (this.document.hasOwnProperty("_attachments")) {
@@ -231,7 +270,7 @@ export class Entity {
 		}
 
 		// Relationships
-		if (this.document.hasOwnProperty("_references")) {
+		if (this.document._references) {
 			// Create references
 			Object.keys(this.document._references).forEach((propertyName) => {
 				const reference = this.document._references[propertyName];
@@ -239,6 +278,17 @@ export class Entity {
 			});
 		}
 		return document;
+	}
+
+	hydrateEntity(typeName, doc) {
+		const namespaceName = typeName.split("/")[0];
+		const namespace = this.namespace.database.namespaces[namespaceName];
+		const typename = typeName.split("/")[1];
+
+		const factory = new EntityFactory(namespace, typename);
+		const entity = factory.create();
+		if (doc) entity.import(doc);
+		return entity;
 	}
 
 	/**

@@ -159,8 +159,12 @@ describe("Entity class", function () {
 		}).to.throw();
 	});
 
-	it("Use nested object", function () {
+	it("Use nested javascript object", function () {
 		const entity = namespace.createEntity("company");
+		entity.address = {
+			street: "main street",
+			number: "10",
+		};
 		expect(() => {
 			entity.address = {
 				street: "main street",
@@ -179,6 +183,7 @@ describe("Entity class", function () {
 	it("Use nested entity with a proper type", function () {
 		const company = namespace.createEntity("company");
 		const user = namespace.createEntity("user");
+		company.user = user;
 		expect(() => {
 			company.user = user;
 		}).not.to.throw();
