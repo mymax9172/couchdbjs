@@ -53,7 +53,7 @@ const Company = {
 		mainAddress: {
 			title: "Address",
 			description: "Address of the HQ",
-			model: "address",
+			model: "business/address",
 		},
 	},
 };

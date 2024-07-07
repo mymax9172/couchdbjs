@@ -229,6 +229,7 @@ export class Entity {
 		document._id = this.document._id;
 		document._rev = this.document._rev;
 		document._delete = this.document._delete;
+		document.type = this.fullTypeName;
 
 		Object.keys(this.model.properties).forEach((propertyName) => {
 			const propertyDefinition = this.model.properties[propertyName];
@@ -240,14 +241,21 @@ export class Entity {
 				var value;
 				if (propertyDefinition.multiple) {
 					// In case of multiple values, get the inner document for each element
-					value = this.document[propertyName].map((element) =>
-						element.export()
-					);
+					value = this.document[propertyName].map((element) => {
+						const v = element.export();
+						delete v._attachments;
+						delete v._rev;
+						delete v._deleted;
+						return v;
+					});
 				} else {
 					// If it is a model, get the inner document
-					if (this.document[propertyName])
+					if (this.document[propertyName]) {
 						value = this.document[propertyName].export();
-					else value = null;
+						delete value._attachments;
+						delete value._rev;
+						delete value._deleted;
+					} else value = null;
 				}
 				document[propertyName] = value;
 			} else document[propertyName] = this.document[propertyName];

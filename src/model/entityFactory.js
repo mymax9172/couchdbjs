@@ -352,19 +352,4 @@ export class EntityFactory {
 		return rules;
 	}
 
-	// /**
-	//  * Rehydrate an entity from its own document
-	//  * @param {JSON} document Document
-	//  * @param {Namespace} namespace Namespace instance
-	//  * @param {String} typeName Name of the type
-	//  * @returns {Entity} Entity from the given document
-	//  */
-	// parseEntity(document, namespace, typeName) {
-	// 	const factory = new EntityFactory(namespace, typeName);
-	// 	const entity = factory.create();
-
-	// 	entity.import(document);
-
-	// 	return entity;
-	// }
 }
