@@ -246,7 +246,7 @@ export class EntityFactory {
 		const propertyDefinition = entity.model.properties[name];
 
 		// Check required attribute
-		if (propertyDefinition.hasOwnProperty("required")) {
+		if (propertyDefinition.required) {
 			let req = getValueOrFunction(propertyDefinition.required, entity);
 			if (req) {
 				if (value == null)
@@ -275,9 +275,7 @@ export class EntityFactory {
 			) {
 				throw new Error("Model mismatch, expected " + propertyDefinition.model);
 			}
-
 			value.validate();
-
 		} else {
 			// Static values
 
@@ -351,5 +349,4 @@ export class EntityFactory {
 
 		return rules;
 	}
-
 }

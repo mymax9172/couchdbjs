@@ -102,6 +102,23 @@ export class Entity {
 		return factory.getValidationRules(this, propertyName);
 	}
 
+	setDraft(value) {
+		this.draft = value;
+
+		const propertyNames = Object.keys(this.model.properties);
+		propertyNames.forEach((propertyName) => {
+			const propertyDefinition = this.model.properties[propertyName];
+
+			if (propertyDefinition.model) {
+				if (propertyDefinition.multiple) {
+					this[propertyName].forEach((e) => (e.draft = value));
+				} else {
+					if (this[propertyName]) this[propertyName].draft = value;
+				}
+			}
+		});
+	}
+
 	/**
 	 * Validate the content of the entity
 	 * @returns {boolean} True if validation passed
@@ -125,17 +142,10 @@ export class Entity {
 						const v = propertyDefinition.reference ? element.id : element;
 						factory.validatePropertyValue(v, this, propertyName);
 					});
-				} else {
-					factory.validatePropertyValue(value, this, propertyName);
 				}
 			} else {
 				// Validation of one element
-				if (value) {
-					const v = propertyDefinition.reference ? value.id : value;
-					factory.validatePropertyValue(v, this, propertyName);
-				} else {
-					factory.validatePropertyValue(value, this, propertyName);
-				}
+				factory.validatePropertyValue(value, this, propertyName);
 			}
 		});
 
