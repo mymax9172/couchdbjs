@@ -88,6 +88,10 @@ export const Model = {
 	attachments: {
 		// Named attachment (can be read as a property on the entity)
 		contract: {
+			// Title and description (abstract)
+			title: "Contract", //
+			description: "Contract with business partners",
+
 			filters: ["application/pdf"], // Limit in terms of mime types
 			size: 1000, // Limit in terms of size (kb)
 			compress: true, // File compressed before saved

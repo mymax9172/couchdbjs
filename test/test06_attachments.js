@@ -33,8 +33,8 @@ describe("Attachments", function () {
 
 	it("Create a single attachment", async function () {
 		const contract = db.data.default.contract.create();
-		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
-		contract.legalDocument.add("text.txt", "text/plain", btoa(data));
+		const data = fs.readFileSync("./test/assetts/text.txt");
+		contract.legalDocument.add("text.txt", "text/plain", data);
 		await contract.save();
 		id = contract.id;
 	});
@@ -49,27 +49,26 @@ describe("Attachments", function () {
 
 	it("Save multiple attachments", async function () {
 		const contract = db.data.default.contract.create();
-		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
-		contract.annexes.add("text.txt", "text/plain", btoa(data));
-		contract.annexes.add("text2.txt", "text/plain", btoa(data));
+		const data = fs.readFileSync("./test/assetts/text.txt");
+		contract.annexes.add("text.txt", "text/plain", data);
+		contract.annexes.add("text2.txt", "text/plain", data);
 		await contract.save();
 	});
 
 	it("Check limits in multiple attachments", async function () {
 		const contract = db.data.default.contract.create();
-		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
-		contract.annexes.add("text.txt", "text/plain", btoa(data));
-		contract.annexes.add("text2.txt", "text/plain", btoa(data));
+		const data = fs.readFileSync("./test/assetts/text.txt");
+		contract.annexes.add("text.txt", "text/plain", data);
+		contract.annexes.add("text2.txt", "text/plain", data);
 
 		expect(() => {
-			contract.annexes.add("text3.txt", "text/plain", btoa(data));
+			contract.annexes.add("text3.txt", "text/plain", data);
 		}).to.throw();
 	});
 
 	it("Check size limit", async function () {
 		const contract = db.data.default.contract.create();
 		const data = fs.readFileSync("./test/assetts/text.txt", "utf8");
-
 		expect(() => {
 			contract.tiny.add("text.txt", "text/plain", btoa(data));
 		}).to.throw();

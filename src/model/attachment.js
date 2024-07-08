@@ -44,10 +44,10 @@ export class Attachment {
 	files = [];
 
 	filters = [];
-	size = 0;
 	compress = false;
 	multiple = false;
-	limit = 0;
+	limit;
+	size;
 
 	constructor(name, entity) {
 		this.name = name;
@@ -82,6 +82,10 @@ export class Attachment {
 		if (this.getStub(filename) != null)
 			throw new Error("File stub already exists");
 
+		if (this.size > 0 && size * 1000 > this.size) {
+			throw new Error("Size limit reached");
+		}
+
 		// Create a stub file
 		this.files.push(new AttachmentFile(this, filename, contentType, size));
 	}
@@ -91,19 +95,14 @@ export class Attachment {
 		const file = this.getStub(filename);
 		if (file == null) throw new Error("Create a stub file first");
 
-		// Check the size
-		if (this.size > 0 && data.length > this.size * 1000) {
-			throw new Error("File size is too big");
-		}
-
 		// Turn the file in an existing file
 		file.stub = false;
 		file.data = data;
 	}
 
-	add(filename, contentType, size, data) {
+	add(filename, contentType, data) {
 		// Create a stub
-		this.defineStub(filename, contentType, size);
+		this.defineStub(filename, contentType, data.length);
 
 		// Load the file
 		this.load(filename, data);

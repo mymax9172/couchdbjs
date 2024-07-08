@@ -37,17 +37,29 @@ const database = await server.use(dbName);
 
 // Create users
 const users = [];
+var buffer;
+
+// Create an avatar
+const response = await fetch("https://thispersondoesnotexist.com");
+if (response.ok) {
+	const blob = await response.blob();
+	var buffer = Buffer.from(await blob.arrayBuffer());
+	fs.writeFileSync("./sample/avatar.jpeg", buffer);
+}
+
 for (let i = 0; i < settings.users; i++) {
 	const item = database.data.security.user.create();
 	item.username = faker.internet.userName();
 	item.password = faker.internet.password();
+	item.avatar.add("avatar.jpeg", "image/jpeg", buffer);
 
-	const response = await fetch("https://thispersondoesnotexist.com");
-	if (response.ok) {
-		const blob = await response.blob();
-		const buffer = Buffer.from(await blob.arrayBuffer());
-		item.picture.add("picture.jpeg", "image/jpeg", buffer);
-	}
+	// const response = await fetch("https://thispersondoesnotexist.com");
+	// //process.stdout.write(".");
+	// if (response.ok) {
+	// 	const blob = await response.blob();
+	// 	const buffer = Buffer.from(await blob.arrayBuffer());
+	// 	item.avatar.add("picture.jpeg", "image/jpeg", buffer);
+	// }
 
 	users.push(item);
 }

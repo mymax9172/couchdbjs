@@ -119,8 +119,10 @@ const User = {
 		},
 	},
 	attachments: {
-		picture: {
-			filters: ["image/jpeg"],
+		avatar: {
+			// title: "Avatar",
+			// description: "Picture of the user",
+			//filters: ["image/jpeg"],
 		},
 	},
 };

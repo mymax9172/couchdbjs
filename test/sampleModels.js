@@ -179,7 +179,7 @@ const Contract = {
 			limit: 2,
 		},
 		tiny: {
-			size: 0.01, // Limit in terms of size (kb)
+			size: 0.01, // Limit in terms of size (kb) === 10 byte
 		},
 	},
 };
