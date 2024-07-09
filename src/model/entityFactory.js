@@ -219,6 +219,8 @@ export class EntityFactory {
 		attachment.filters = attachmentDefinition.filters || null;
 		attachment.multiple = attachmentDefinition.multiple || false;
 		attachment.limit = attachmentDefinition.limit || 0;
+		attachment.title = attachmentDefinition.title;
+		attachment.description = attachmentDefinition.description;
 
 		if (!entity.document.hasOwnProperty("_attachments"))
 			entity.document._attachments = {};

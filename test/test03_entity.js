@@ -1,6 +1,6 @@
-import { CouchServer } from "../../src/database/couchServer.js";
-import { Entity } from "../../src/model/entity.js";
-import { ExampleDbSchema } from "../sampleModels.js";
+import { CouchServer } from "../src/database/couchServer.js";
+import { Entity } from "../src/model/entity.js";
+import { ExampleDbSchema } from "./sampleModels.js";
 import "dotenv/config";
 
 import { should, expect } from "chai";

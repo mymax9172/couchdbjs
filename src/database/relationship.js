@@ -3,6 +3,8 @@ import { Reference, ReferenceList } from "../model/reference.js";
 
 export class Relationship {
 	name;
+	title;
+	description;
 	type;
 	leftType;
 	rightType;
@@ -17,6 +19,8 @@ export class Relationship {
 		this.type = definition.type;
 		this.required = definition.required;
 		this.name = definition.name;
+		this.title = definition.title;
+		this.description = definition.description;
 		this.leftType = this.getFullType(definition.left);
 		this.rightType = this.getFullType(definition.right);
 
@@ -126,7 +130,7 @@ export class Relationship {
 			const query = {};
 
 			if (!multiple) query[propertyName] = entity.id;
-			else query[propertyName] = { $in: entity.id };
+			else query[propertyName] = { $in: [entity.id] };
 
 			return await namespace[typeName].find(query);
 		};
@@ -189,6 +193,11 @@ export class Relationship {
 			return {
 				name: this.name,
 				fields: [this.rightPropertyName],
+			};
+		else if (this.type === "many-to-many")
+			return {
+				name: this.name,
+				fields: [this.leftPropertyName],
 			};
 	}
 

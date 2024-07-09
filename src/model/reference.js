@@ -113,7 +113,7 @@ export class ReferenceList {
 		var id;
 
 		if (entity instanceof Entity) id = entity.id;
-		else id = value;
+		else id = entity;
 
 		if (this.references.find((e) => e.id === id) == null)
 			throw new Error("This id does not exist, " + id);

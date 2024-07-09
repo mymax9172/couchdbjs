@@ -40,6 +40,9 @@ export class Attachment {
 	// Entity of the attachment
 	entity;
 
+	title;
+	description;
+	
 	// Attachment files
 	files = [];
 

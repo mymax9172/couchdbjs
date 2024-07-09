@@ -165,12 +165,15 @@ export class Entity {
 	 */
 	import(doc) {
 		// Standard CouchDB fields
-		this.document._id = doc._id;
-		this.document._rev = doc._rev;
-		this.document._deleted = doc._deleted;
+		if (doc._id) this.document._id = doc._id;
+		if (doc._rev) this.document._rev = doc._rev;
+		if (doc._deleted) this.document._deleted = doc._deleted;
 
 		// Read all model properties
 		Object.keys(this.model.properties).forEach((propertyName) => {
+			// Skip if the doc does not have that value
+			if (!doc[propertyName]) return;
+
 			const propertyDefinition = this.model.properties[propertyName];
 
 			// In case of nested object
@@ -272,6 +275,15 @@ export class Entity {
 			} else document[propertyName] = this.document[propertyName];
 		});
 
+		// Relationships
+		if (this.document._references) {
+			// Create references
+			Object.keys(this.document._references).forEach((propertyName) => {
+				const reference = this.document._references[propertyName];
+				document[propertyName] = reference.data();
+			});
+		}
+
 		// Attachments
 		if (this.document.hasOwnProperty("_attachments")) {
 			document._attachments = {};
@@ -285,15 +297,6 @@ export class Entity {
 						data: file.data,
 					};
 				});
-			});
-		}
-
-		// Relationships
-		if (this.document._references) {
-			// Create references
-			Object.keys(this.document._references).forEach((propertyName) => {
-				const reference = this.document._references[propertyName];
-				document[propertyName] = reference.data();
 			});
 		}
 		return document;
