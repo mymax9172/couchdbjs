@@ -19,8 +19,18 @@ Note the minimum required version of Node.js is 10.
 
 - [Getting started](#getting-started)
 - [Tutorials](#tutorials)
-- [API](#api)
-  - [CouchServer class](#couchServer-callback)
+- [APIs](#apis)
+  - [CouchServer class](#couchserver)
+  - [CouchDatabase class](#couchdatabase)
+  - [Entity class]()
+  - [Attachment class]()
+  - [Relationship class]()
+  - [Reference class]()
+  - [Schema definition]()
+- [Definitions](#definitions)
+  - [Schema definition](#schema-definition)
+  - [Entity model](#entity-model)
+  - [Relationship definition](#relationship-definition)
 
 ## Getting started
 
@@ -594,3 +604,296 @@ When you set a new value, the following flow is executed:
 [4]: https://github.com/apache/couchdb-nano/blob/main/cfg/couch.example.js
 [8]: https://webchat.freenode.net?channels=%23couchdb-dev
 [axios]: https://github.com/axios/axios
+
+## APIs
+
+### CouchServer
+
+**Constructor CouchServer(url, port = 5984, config)**
+
+> Create a new CouchServer instance  
+> url: Server address (including http(s)://)  
+> port: Port number (default is 5984)  
+> config: Configuration object
+
+A basic example to create a new instance is the following (using the default port number):
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+```
+
+Third argument is the configuration object.
+
+> - username: Username for authentication
+> - password: Password for authentication
+> - secretKey: Secret key for encrypted data
+
+In case your server is under authentication, it is possible to provide credentials within the config object
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url, 5984, {
+	username: "my-username",
+	password: "my-password",
+});
+```
+
+> Authentication in this release is based on [Basic Authentication mechanism](https://docs.couchdb.org/en/stable/api/server/authn.html) - It is crucial to adopt an SSL protocol to encrypt credentials transmission
+
+Databases can have some encrypted data. For encrypted data is important to provide a secret key, to be passed when the server connection is established
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url, 5984, {
+	username: "my-username",
+	password: "my-password",
+	secretKey: "my-secret-key",
+});
+```
+
+**async isUp()**
+
+> Return true if the server is up and runningCreate a new CouchServer instance
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+if (await server.isUp()) console.log("Server is up and running");
+else console.error("Server is not available");
+```
+
+**async getInfo()**
+
+> Return server info (returned by CouchDB method: get /)
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+console.log(await server.getInfo());
+```
+
+**async getDatabaseList(onlyWithSchema)**
+
+> Return an array of string with all database names  
+> onlyWithSchema: 'true' to list only schema-based database
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+// List all schema-based databases
+console.log(await server.getDatabaseList(true));
+```
+
+**async exists(name)**
+
+> Return true if a database exists with that given name  
+> name: name of the database to test
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+// List all schema-based databases
+if (await server.exists("test")) console.log("test database exists");
+```
+
+**async hasSchema(name)**
+
+> Return true if a database with the given name is schema-based  
+> name: name of the database
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+// List all schema-based databases
+if (await server.hasSchema("test"))
+	console.log("test database is schema-based");
+```
+
+**async create(name, schema)**
+
+> Create a new database (with or without a schema definition)  
+> name: name of the database  
+> schema:(optional) schema definition
+
+Without a schema definition this methods just create an empty database in the connected server. Usign a schema is highly recommended to take advantage of this library.
+
+Returned object:
+
+> ok: true if the operation succeeded  
+> error: (if ok is false), description of occurred error
+
+```js
+import { CouchServer } from "couchdbjs";
+import { mySchema } from "....";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+// Create a new database
+if (!(await server.exists("test"))) {
+	const result = await server.create("test", mySchema);
+	if (result.ok) console.log("Database test succesfully created");
+	else console.error("Database creation failed: " + result.error);
+}
+```
+
+**async delete(name)**
+
+> Delete an existing database (with or without a schema definition)  
+> name: name of the database
+
+Returns info about the deleted database [CouchDB doc](https://docs.couchdb.org/en/stable/api/database/common.html#):
+
+```js
+import { CouchServer } from "couchdbjs";
+import { mySchema } from "....";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+// Delete a database
+if (await server.exists("test")) await server.delete("test");
+```
+
+**async use(name)**
+
+> Open an existing database and instanciate a CouchDatabase instance  
+> name: name of the database
+
+```js
+import { CouchServer } from "couchdbjs";
+import { mySchema } from "....";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+
+// Opne test database
+const database = await server.use("test");
+```
+
+### CouchDatabase
+
+Do not create a CouchDatabase instance using "new", only by the use method of a CouchServer instance
+
+**async getInfo()**
+
+> Returns info about the database (same as PouchDb.info())
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+const database = await server.use("test");
+
+console.log(await database.getInfo());
+```
+
+**async getSchema()**
+
+> Returns the current schema of the database (see the schema definition)
+
+```js
+import { CouchServer } from "couchdbjs";
+
+// Create a server instance
+url = "http:/<YOURURL>";
+const server = new CouchServer(url);
+const database = await server.use("test");
+
+console.log(await database.getSchema());
+```
+
+## Definitions
+
+### Schema definition
+
+It is a javascript object where it is defined how the database is structured (its schema). It has a version property (integer from 1 onward) and a collection of namespaces and relationships (see below)
+
+```js
+export const SampleCRMSchema = {
+	version: 1,
+
+	namespaces: {
+		// ...
+	},
+
+	relationships: {
+		// ...
+	},
+};
+```
+
+### Namespace
+
+A namespace is a context where one or many model entities are defined. It has its own title and description, for technical documentation, and a list of entity models (see below)
+
+```js
+import { Company, Contact, Address } from "./models/business-data-models.js";
+import { User, Role } from "./models/scurity-data-models.js";
+
+export const SampleCRMSchema = {
+	version: 1,
+
+	namespaces: {
+		business: {
+			title: "Business",
+			description: "Business context of sales",
+			models: [Company, Contact, Address],
+		},
+		security: {
+			title: "Security",
+			description: "Data privacy, authentication and authorization",
+			models: [User, Role],
+		},
+	},
+
+	relationships: {
+		// ...
+	},
+};
+```
+
+In this example there are two namespaces, one is called "Business", it combines all business entity models, the other is called "Security", it combines all security related entity models
+
+To propertly identify a data model it is important to use the namespace and it is type name, so business/company not just company
+
+### Entity model
+
+An entity model is the proper description of the entity. It is a javascript object 
+
+### Relationship definition

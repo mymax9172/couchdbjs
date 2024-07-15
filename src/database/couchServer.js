@@ -127,6 +127,11 @@ export class CouchServer {
 		return list.includes(name);
 	}
 
+	/**
+	 * Check if the database with the given name has a schema or not
+	 * @param {String} name Name of teh database
+	 * @returns {Boolean} True if the database is schema-based
+	 */
 	async hasSchema(name) {
 		try {
 			const db = new PouchDB(this.url + ":" + this.port + "/" + name, {
@@ -146,7 +151,7 @@ export class CouchServer {
 	 * @param {string} name Name of the database
 	 * @param {JSON} schema Schema of the database (optional)
 	 */
-	async create(name, schema) {
+	async create(name) {
 		// Check mandatory arguments
 		checkMandatoryArgument("name", name);
 
@@ -222,12 +227,17 @@ export class CouchServer {
 		return database;
 	}
 
-	/**
-	 * Migrate a database to a new version
-	 * @param {String} name Name of the database
-	 * @returns {Migration} Migration details
-	 */
-	async migrate(name, migration) {}
+	// /**
+	//  * Migrate a database to a new version
+	//  * @param {String} name Name of the database
+	//  * @param {Migration} migrationClass Migration class to be used
+	//  * @param {string} [direction="up"] Direction of the migration
+	//  */
+	// async migrate(name, migrationClass, direction = "up") {
+	// 	const db = await this.use(name);
+	// 	const migration = new migrationClass(db);
+	// 	if (direction === "up") migration.up()
+	// }
 
 	/**
 	 * Create the schema and indexes
