@@ -151,7 +151,7 @@ export class CouchServer {
 	 * @param {string} name Name of the database
 	 * @param {JSON} schema Schema of the database (optional)
 	 */
-	async create(name) {
+	async create(name, schema) {
 		// Check mandatory arguments
 		checkMandatoryArgument("name", name);
 

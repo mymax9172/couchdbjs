@@ -8,7 +8,7 @@ import { ReferenceList } from "./src/model/reference.js";
 import { EntityFactory } from "./src/model/entityFactory.js";
 import { Attachment } from "./src/model/attachment.js";
 import { Migration } from "./src/database/migration.js";
-import { Relationship } from "./src/database/relationship.js";
+import { Relationship } from "./src/model/relationship.js";
 
 export {
 	CouchServer,
