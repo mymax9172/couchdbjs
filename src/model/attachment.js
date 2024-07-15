@@ -23,7 +23,7 @@ class AttachmentFile {
 		if (this.stub) {
 			const id = this.attachment.name + "|" + this.filename;
 			this.data =
-				await this.attachment.entity.namespace.database.pouchDb.getAttachment(
+				await this.attachment.entity._definition.namespace.database.pouchDb.getAttachment(
 					this.attachment.entity.id,
 					id
 				);
@@ -37,24 +37,37 @@ export class Attachment {
 	// Name of the attachment
 	name;
 
-	// Entity of the attachment
-	entity;
-
+	// Abstract
 	title;
 	description;
-	
+
+	// Required
+	required;
+
+	// Parent entity of the attachment
+	entity;
+
 	// Attachment files
 	files = [];
 
+	// Conditions
 	filters = [];
 	compress = false;
 	multiple = false;
 	limit;
 	size;
 
-	constructor(name, entity) {
+	constructor(name, entity, definition) {
 		this.name = name;
 		this.entity = entity;
+
+		this.compress = definition.compress || false;
+		this.size = definition.size || 0;
+		this.filters = definition.filters || null;
+		this.multiple = definition.multiple || false;
+		this.limit = definition.limit || 0;
+		this.title = definition.title;
+		this.description = definition.description;
 	}
 
 	refresh() {

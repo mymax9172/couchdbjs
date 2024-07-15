@@ -110,6 +110,14 @@ const User = {
 	},
 };
 
+const Author = {
+	typeName: "author",
+	service: "collection",
+	properties: {
+		name: {},
+	},
+};
+
 const House = {
 	typeName: "house",
 	service: "collection",
@@ -129,6 +137,14 @@ const House = {
 		},
 		birthday: {
 			type: StandardTypes.DateTimePropertyType,
+		},
+		estateInfo: {},
+		owner: {
+			model: "default/user1",
+		},
+		coOwners: {
+			model: "default/user1",
+			multiple: true,
 		},
 	},
 };
@@ -196,6 +212,7 @@ export const ExampleDbSchema = {
 				User2,
 				Contact,
 				User,
+				Author,
 				House,
 				Company,
 				Organization,
@@ -228,7 +245,7 @@ export const ExampleDbSchema = {
 		projectsAuthors: {
 			type: "many-to-many",
 			left: "default/project",
-			right: "default/user",
+			right: "default/author",
 		},
 	},
 };

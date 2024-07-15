@@ -2,13 +2,10 @@ import { Entity } from "./entity.js";
 import {
 	checkMandatoryArgument,
 	getValueOrFunction,
-	validateRule,
 } from "../helpers/tools.js";
 import { security } from "../helpers/security.js";
-import { Namespace } from "./namespace.js";
-import { Reference, ReferenceList } from "./reference.js";
 import { Attachment } from "./attachment.js";
-import { Relationship } from "../database/relationship.js";
+import { Reference, ReferenceList } from "./reference.js";
 
 export class EntityFactory {
 	typeName;
@@ -33,7 +30,7 @@ export class EntityFactory {
 		// Retrieve the model
 		const model = this.namespace.getModel(this.typeName);
 
-		// Create a blank entity
+		// Create a brand new entity
 		const entity = new Entity(this.namespace, model);
 
 		// Create all properties
@@ -57,11 +54,8 @@ export class EntityFactory {
 				this.namespace.database.relationships
 			);
 			relationships.forEach((relationship) => {
-				// Create the relationship
-				if (relationship.implement(entity)) {
-					// Store the relationship in the entity
-					if (entity.relationships == null) entity.relationships = {};
-					entity.relationships[relationship.name] = relationship;
+				if (relationship.contains(entity)) {
+					this.createRelationship(entity, relationship);
 				}
 			});
 		}
@@ -79,12 +73,12 @@ export class EntityFactory {
 
 		// Internal function to write a value to the inner document
 		function writeValue(value) {
-			// Check if a property type is defined
 			var updatedValue = value;
 
 			if (propertyDefinition.beforeWrite)
 				updatedValue = propertyDefinition.beforeWrite(updatedValue);
 
+			// Check if a property type is defined
 			if (propertyDefinition.type) {
 				const propertyType = propertyDefinition.type;
 				if (propertyType.beforeWrite)
@@ -97,7 +91,7 @@ export class EntityFactory {
 			} else if (propertyDefinition.hashed)
 				updatedValue = security.hash(updatedValue);
 
-			entity.document[name] = updatedValue;
+			entity._content.properties[name] = updatedValue;
 		}
 
 		// Internal function to read a value from the inner document
@@ -139,16 +133,10 @@ export class EntityFactory {
 		}
 
 		// Get the default value
-		if (
-			!propertyDefinition.computed
-			//propertyDefinition.type != "attachment"
-		) {
+		if (!propertyDefinition.computed) {
 			const defaultValue = getDefault(propertyDefinition);
 			writeValue(defaultValue);
 		}
-
-		// Helper for getters/setters
-		const factory = this;
 
 		// Define getters and setters
 		Object.defineProperty(entity, name, {
@@ -158,7 +146,7 @@ export class EntityFactory {
 				if (propertyDefinition.computed) {
 					return propertyDefinition.computed.bind(entity)();
 				} else {
-					const value = readValue(entity.document[name]);
+					const value = readValue(entity._content.properties[name]);
 
 					// Return empty value as it is
 					return value;
@@ -167,8 +155,6 @@ export class EntityFactory {
 
 			// Setter
 			set(value) {
-				// console.log("setting property " + name + " to:", value);
-				let updValue = value;
 				let readonly = false;
 
 				if (propertyDefinition.readonly)
@@ -187,20 +173,14 @@ export class EntityFactory {
 						"Couldn't assign an array when multiple values are not allowed"
 					);
 				}
-
-				// Check if multiple values
-				if (propertyDefinition.multiple) {
-					// Validation of all elements
-					updValue.forEach((element) => {
-						factory.validatePropertyValue(element, entity, name);
-					});
-				} else {
-					// Validation of one element
-					factory.validatePropertyValue(updValue, entity, name);
+				if (!Array.isArray(value) && propertyDefinition.multiple) {
+					throw new Error(
+						"Couldn't assign a single value when multiple values are required"
+					);
 				}
 
 				// Store value in the document
-				writeValue(updValue);
+				writeValue(value);
 			},
 		});
 	}
@@ -213,142 +193,139 @@ export class EntityFactory {
 		checkMandatoryArgument("attachmentDefinition", attachmentDefinition);
 
 		// Create an attachment object
-		const attachment = new Attachment(name, entity);
-		attachment.compress = attachmentDefinition.compress || false;
-		attachment.size = attachmentDefinition.size || 0;
-		attachment.filters = attachmentDefinition.filters || null;
-		attachment.multiple = attachmentDefinition.multiple || false;
-		attachment.limit = attachmentDefinition.limit || 0;
-		attachment.title = attachmentDefinition.title;
-		attachment.description = attachmentDefinition.description;
-
-		if (!entity.document.hasOwnProperty("_attachments"))
-			entity.document._attachments = {};
-		entity.document._attachments[name] = attachment;
+		const attachment = new Attachment(name, entity, attachmentDefinition);
+		entity._content.attachments[name] = attachment;
 
 		// Define getters and setters
 		Object.defineProperty(entity, name, {
 			// Getter
 			get() {
-				return entity.document._attachments[name];
+				return entity._content.attachments[name];
 			},
 		});
 	}
 
-	/**
-	 * Validate a property value
-	 * @param {*} value Value to be validated
-	 * @param {*} entity Entity
-	 * @param {*} name Name of the property
-	 */
-	validatePropertyValue(value, entity, name) {
-		//Skipped if draft
-		if (entity.draft) return;
+	createRelationship(entity, relationship) {
+		// Check mandatory arguments
+		checkMandatoryArgument("entity", entity);
+		checkMandatoryArgument("relationship", relationship);
 
-		const propertyDefinition = entity.model.properties[name];
+		function createQueryMethod(entity, relationship, side) {
+			var namespace,
+				typeName,
+				functionName,
+				propertyName,
+				multiple = false;
 
-		// Check required attribute
-		if (propertyDefinition.required) {
-			let req = getValueOrFunction(propertyDefinition.required, entity);
-			if (req) {
-				if (value == null)
-					throw new Error("Missing required value, null or undefined " + name);
-				if (typeof value === "string" && value.length === 0)
-					throw new Error("Missing required value, empty string");
-				if (typeof value === "object") {
-					if (Array.isArray(value) && value.length === 0)
-						throw new Error("Missing required value, empty array");
-					if (value.constructor === Object && Object.keys(value).length === 0)
-						throw new Error("Missing required value, empty object");
-				}
+			if (side === "left") {
+				// Namespace and typename of the right side
+				namespace =
+					entity._definition.namespace.database.data[
+						relationship.right.namespaceName
+					];
+				typeName = relationship.right.typeName;
+				functionName = relationship.left.queryName;
+				propertyName = relationship.right.propertyName;
+			} else {
+				// Namespace and typename of the left side
+				namespace =
+					entity._definition.namespace.database.data[
+						relationship.left.namespaceName
+					];
+				typeName = relationship.left.typeName;
+				functionName = relationship.right.queryName;
+				propertyName = relationship.left.propertyName;
+				multiple = true;
 			}
+
+			// Create the query method
+
+			entity[functionName] = async function () {
+				// Define the query
+				const query = {};
+
+				if (!multiple) query[propertyName] = entity.id;
+				else query[propertyName] = { $in: [entity.id] };
+				return await namespace[typeName].find(query);
+			};
 		}
 
-		// Validate (if not null)
-		if (value == null) return;
+		function createReferenceProperty(entity, relationship, side) {
+			var namespace, typeName, propertyName;
 
-		// Check if value is an entity
-		if (propertyDefinition.model) {
-			if (
-				value.constructor.name != "Entity" ||
-				!value.model ||
-				value.namespace.name != propertyDefinition.model.split("/")[0] ||
-				value.model.typeName != propertyDefinition.model.split("/")[1]
-			) {
-				throw new Error("Model mismatch, expected " + propertyDefinition.model);
-			}
-			value.validate();
-		} else {
-			// Static values
+			if (side === "right") {
+				// Namespace and typename of the left side
+				namespace =
+					entity._definition.namespace.database.namespaces[
+						relationship.left.namespaceName
+					];
+				typeName = relationship.left.typeName;
+				propertyName = relationship.right.propertyName;
 
-			// Exclude models
-			if (value.constructor.name === "Entity")
-				throw new Error("Not expected an entity");
+				// Create the reference
+				entity._content.references[relationship.name] = new Reference(
+					namespace,
+					typeName,
+					relationship.required
+				);
 
-			if (propertyDefinition.type) {
-				// Check property type rules
-				const propertyType = propertyDefinition.type;
+				// Create a new property for this entity
+				Object.defineProperty(entity, propertyName, {
+					get() {
+						return entity._content.references[relationship.name];
+					},
+					set(value) {
+						entity._content.references[relationship.name].set(value);
+					},
+				});
+			} else {
+				// ReferenceList property on left (for many-to-many)
 
-				if (propertyType.rules && propertyType.rules.length > 0) {
-					const result = validateRule(value, propertyType.rules, entity);
-					if (typeof result === "string")
-						throw new Error("Invalid value: " + result);
-				}
-			}
+				// Namespace and typename of the right side
+				namespace =
+					entity._definition.namespace.database.namespaces[
+						relationship.right.namespaceName
+					];
+				typeName = relationship.right.typeName;
+				propertyName = relationship.left.propertyName;
 
-			// Check property rules
-			if (propertyDefinition.rules && propertyDefinition.rules.length > 0) {
-				const result = validateRule(value, propertyDefinition.rules, entity);
-				if (typeof result === "string")
-					throw new Error("Invalid value: " + result);
-			}
-		}
-	}
+				// Create where to save references
+				entity._content.references[relationship.name] = new ReferenceList(
+					namespace,
+					typeName,
+					relationship.required
+				);
 
-	/**
-	 * Return all rules applicable
-	 * @param {Entity} entity Entity to be validated
-	 * @param {String} name Property name
-	 */
-	getValidationRules(entity, name) {
-		const propertyDefinition = entity.model.properties[name];
-		const rules = [];
-
-		if (propertyDefinition.computed) return rules;
-
-		// Check required attribute
-		if (propertyDefinition.hasOwnProperty("required")) {
-			let req = getValueOrFunction(propertyDefinition.required, entity);
-			if (req) {
-				const conditions = [];
-				conditions.push((value) => value == null || "Required value");
-
-				rules.push((value) => {
-					if (
-						value == null ||
-						(typeof value === "string" && value.length === 0) ||
-						(typeof value === "object" &&
-							Array.isArray(value) &&
-							value.length === 0) ||
-						(typeof value === "object" &&
-							value.constructor === Object &&
-							Object.keys(value).length === 0)
-					)
-						return "Required value";
-					else return true;
+				// Create a new property for this entity
+				Object.defineProperty(entity, propertyName, {
+					get() {
+						return entity._content.references[relationship.name];
+					},
+					set(values) {
+						entity._content.references[relationship.name].set(values);
+					},
 				});
 			}
 		}
 
-		if (propertyDefinition.type) {
-			// Check property type rules
-			const propertyType = propertyDefinition.type;
+		// Store the relationship
+		entity._definition.relationships[relationship.name] = relationship;
 
-			if (propertyType.rules) rules.push(...propertyType.rules);
+		const side = relationship.getSide(entity);
+		if (relationship.type === "one-to-many") {
+			if (side === "left") {
+				createQueryMethod(entity, relationship, side);
+			} else {
+				createReferenceProperty(entity, relationship, side);
+			}
 		}
 
-		if (propertyDefinition.rules) rules.push(...propertyDefinition.rules);
-
-		return rules;
+		if (relationship.type === "many-to-many") {
+			if (side === "left") {
+				createReferenceProperty(entity, relationship, side);
+			} else {
+				createQueryMethod(entity, relationship, side);
+			}
+		}
 	}
 }

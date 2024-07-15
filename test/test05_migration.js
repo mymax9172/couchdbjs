@@ -1,5 +1,8 @@
 import { CouchServer } from "../src/database/couchServer.js";
-import { Migration } from "../src/database/migration.js";
+import {
+	Migration,
+	StandardMigrationActions,
+} from "../src/database/migration.js";
 import { SampleDbSchema } from "./sampleDb.js";
 import "dotenv/config";
 
@@ -17,9 +20,12 @@ class Migration1to2 extends Migration {
 	async onUpgrade() {
 		const actions = [];
 
-		const result = await this.addProperty("default", "user", "score", 10);
+		const addPropertyAction = new StandardMigrationActions.addProperty(
+			this.database
+		);
+		const result = await addPropertyAction.run("default", "user", "score", 10);
 		if (result.error) throw new Error(result.error);
-		else actions.push(result);
+		else actions.push(result.log);
 
 		return actions;
 	}
@@ -27,9 +33,13 @@ class Migration1to2 extends Migration {
 	async onDowngrade() {
 		const actions = [];
 
-		const result = await this.removeProperty("default", "user", "score");
+		const removePropertyAction = new StandardMigrationActions.removeProperty(
+			this.database
+		);
+
+		const result = await removePropertyAction.run("default", "user", "score");
 		if (result.error) throw new Error(result.error);
-		else actions.push(result);
+		else actions.push(result.log);
 
 		return actions;
 	}
@@ -46,14 +56,17 @@ class Migration1to1 extends Migration {
 	async onUpgrade() {
 		const actions = [];
 
-		const result = await this.changeProperty(
+		const updatePropertyAction = new StandardMigrationActions.updateProperty(
+			this.database
+		);
+		const result = await updatePropertyAction.run(
 			"default",
 			"user",
 			"lastName",
 			(e) => e + " changed"
 		);
 		if (result.error) throw new Error(result.error);
-		else actions.push(result);
+		else actions.push(result.log);
 
 		return actions;
 	}

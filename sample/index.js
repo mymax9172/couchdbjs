@@ -61,7 +61,6 @@ for (let i = 0; i < settings.users; i++) {
 	item.password = faker.internet.password();
 	item.employeeNumber =
 		"SN-" + String(Math.floor(Math.random() * 100000)).padStart(6, "0");
-	//Math.trunc(Math.random()*roleInput.length)
 	item.roleList.add(roles[0]);
 
 	const response = await fetch("https://thispersondoesnotexist.com");
@@ -102,6 +101,7 @@ for (let i = 0; i < settings.contacts; i++) {
 	const item = database.data.business.contact.create();
 	item.firstName = faker.person.firstName();
 	item.lastName = faker.person.lastName();
+	item.company = companies[Math.floor(Math.random() * companies.length)].id;
 	contacts.push(item);
 }
 await database.data.business.contact.saveAll(contacts);

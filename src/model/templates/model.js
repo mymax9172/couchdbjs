@@ -92,6 +92,13 @@ export const Model = {
 			title: "Contract", //
 			description: "Contract with business partners",
 
+			// (optional) Required, true if the value must not be a null, undefined, empty string, empty array nor empty object
+			required: false,
+			required(entity) {
+				// this is the entity itself
+				// return true or false
+			},
+
 			filters: ["application/pdf"], // Limit in terms of mime types
 			size: 1000, // Limit in terms of size (kb)
 			compress: true, // File compressed before saved

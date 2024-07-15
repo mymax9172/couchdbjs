@@ -1,22 +1,31 @@
+import {
+	checkMandatoryArgument,
+	getValueOrFunction,
+	checkRules,
+} from "../helpers/tools.js";
 import { EntityFactory } from "./entityFactory.js";
 import { Namespace } from "./namespace.js";
 import { Reference } from "./reference.js";
 
 export class Entity {
-	// Namespace
-	namespace;
+	// Content
+	_content = {
+		draft: false,
+		properties: {
+			_id: undefined,
+			_rev: undefined,
+			_deleted: false,
+		},
+		attachments: {},
+		references: {},
+	};
 
-	// Model
-	model;
-
-	// Internal document with values
-	document;
-
-	// Relationships
-	relationships;
-
-	// Set to true to pause validations
-	draft = false;
+	// Definition
+	_definition = {
+		namespace: null,
+		model: null,
+		relationships: {},
+	};
 
 	/**
 	 * Create a new entity
@@ -25,25 +34,22 @@ export class Entity {
 	 * @param {Model} model Model of the entity
 	 */
 	constructor(namespace, model) {
-		this.namespace = namespace;
-		this.model = model;
+		checkMandatoryArgument("namespace", namespace);
+		checkMandatoryArgument("model", model);
 
-		this.document = {
-			_id: undefined,
-			_rev: undefined,
-			_deleted: false,
-			_attachments: {},
-		};
+		this._definition.namespace = namespace;
+		this._definition.model = model;
 
+		// Unique id
 		switch (model.service) {
 			case "singleton":
-				this.document._id = this.fullTypeName;
+				this._content.properties._id = this.type;
 				break;
 
 			case "none":
 			case "collection":
-				this.document._id =
-					this.fullTypeName +
+				this._content.properties._id =
+					this.type +
 					"/" +
 					Date.now() +
 					"-" +
@@ -55,21 +61,30 @@ export class Entity {
 	 * ID system property
 	 * */
 	get id() {
-		return this.document._id;
+		return this._content.properties._id;
 	}
 
 	/**
 	 * REV system property
 	 */
 	get rev() {
-		return this.document._rev;
+		return this._content.properties._rev;
 	}
 
 	/**
-	 * Full type name
+	 * DELETED system property
 	 */
-	get fullTypeName() {
-		return this.namespace.name + "/" + this.model.typeName;
+	get deleted() {
+		return this._content.properties._deleted;
+	}
+
+	/**
+	 * Full type name (including namespace name)
+	 */
+	get type() {
+		return (
+			this._definition.namespace.name + "/" + this._definition.model.typeName
+		);
 	}
 
 	/**
@@ -80,12 +95,22 @@ export class Entity {
 		if (splitId.length === 2) return "";
 		else return splitId[2];
 	}
+
 	/**
-	 * Check if the entity is deleted
-	 * @returns {boolean} True if the entity has been deleted
+	 * Check if this entity has attachments
+	 * @returns {Boolean} True if one or more attachment are stored
 	 */
-	isDeleted() {
-		return this.document._deleted;
+	get hasAttachments() {
+		return Object.keys(this._content.attachments).length > 0;
+	}
+
+	get draft() {
+		return this._content.draft;
+	}
+
+	set draft(value) {
+		// Set the new draft status
+		this._content.draft = value;
 	}
 
 	/**
@@ -93,111 +118,77 @@ export class Entity {
 	 * @returns {string} String representation of an entity
 	 */
 	toString() {
-		if (this.model.toString) return this.model.toString.bind(this)();
-		else return this.fullTypeName;
+		if (this._definition.model.toString)
+			return this._definition.model.toString.bind(this)();
+		else return (this._definition.model.title || this.type) + ":" + this.key;
 	}
 
-	getRules(propertyName) {
-		const factory = new EntityFactory(this.namespace, this.model.typeName);
-		return factory.getValidationRules(this, propertyName);
-	}
-
-	setDraft(value) {
-		this.draft = value;
-
-		const propertyNames = Object.keys(this.model.properties);
-		propertyNames.forEach((propertyName) => {
-			const propertyDefinition = this.model.properties[propertyName];
-
-			if (propertyDefinition.model) {
-				if (propertyDefinition.multiple) {
-					this[propertyName].forEach((e) => (e.draft = value));
-				} else {
-					if (this[propertyName]) this[propertyName].draft = value;
-				}
-			}
-		});
-	}
-
-	/**
-	 * Validate the content of the entity
-	 * @returns {boolean} True if validation passed
-	 */
-	validate() {
-		// Skipped if draft
-		if (this.draft) return true;
-
-		const factory = new EntityFactory(this.namespace, this.model.typeName);
-
-		// Check properties
-		const propertyNames = Object.keys(this.model.properties);
-		propertyNames.forEach((propertyName) => {
-			const propertyDefinition = this.model.properties[propertyName];
-			const value = this[propertyName];
-
-			if (propertyDefinition.multiple) {
-				if (value) {
-					// Validation of all elements
-					value.forEach((element) => {
-						const v = propertyDefinition.reference ? element.id : element;
-						factory.validatePropertyValue(v, this, propertyName);
-					});
-				}
-			} else {
-				// Validation of one element
-				factory.validatePropertyValue(value, this, propertyName);
-			}
-		});
-
-		// Check relationships
-		if (this.document._references) {
-			Object.keys(this.document._references).forEach((referenceName) => {
-				const reference = this.document._references[referenceName];
-				reference.validate();
-			});
-		}
-		return true;
-	}
+	//#region JSON management
 
 	/**
 	 * Import a JSON document
 	 * @param {JSON} doc Document to import
 	 */
 	import(doc) {
-		// Standard CouchDB fields
-		if (doc._id) this.document._id = doc._id;
-		if (doc._rev) this.document._rev = doc._rev;
-		if (doc._deleted) this.document._deleted = doc._deleted;
+		function importSingleProperty(name, propertyDefinition, value) {
+			// Null if it is null
+			if (value == null) return value;
 
-		// Read all model properties
-		Object.keys(this.model.properties).forEach((propertyName) => {
-			// Skip if the doc does not have that value
+			// Check if it is a sub-entity
+			if (propertyDefinition.model) {
+				const namespaceName = propertyDefinition.model.split("/")[0];
+				const namespace = this.namespace.database.namespaces[namespaceName];
+				const typename = propertyDefinition.model.split("/")[1];
+
+				const factory = new EntityFactory(namespace, typename);
+				const entity = factory.create();
+				entity.import(value);
+				return entity;
+			} else {
+				return value;
+			}
+		}
+
+		// Check type
+		if (doc.type != this.type)
+			throw new Error(
+				"Expected document of type " + this.type + " got " + doc.type
+			);
+
+		// Standard CouchDB fields
+		if (doc._id) this._content.properties._id = doc._id;
+		if (doc._rev) this._content.properties._rev = doc._rev;
+		if (doc._deleted) this._content.properties._deleted = doc._deleted;
+
+		// Read all properties
+		Object.keys(this._definition.model.properties).forEach((propertyName) => {
+			// Skip if the doc does not have that value (ignore without error)
 			if (!doc[propertyName]) return;
 
-			const propertyDefinition = this.model.properties[propertyName];
+			// Get the property definition
+			const propertyDefinition =
+				this._definition.model.properties[propertyName];
+			const value = doc[propertyName];
 
-			// In case of nested object
-			if (propertyDefinition.model) {
-				var value;
-				if (propertyDefinition.multiple) {
-					// In case of multiple values, get the inner document for each element
-					value = doc[propertyName].map((element) => {
-						this.hydrateEntity(propertyDefinition.model, element);
-					});
-				} else {
-					// If it is a model, get the inner document
-					value = this.hydrateEntity(
-						propertyDefinition.model,
-						doc[propertyName]
-					);
-				}
-				this.document[propertyName] = value;
-			} else this.document[propertyName] = doc[propertyName];
+			// Check if multiple values are allowed
+			if (propertyDefinition.multiple) {
+				this._content.properties[propertyName] = doc[propertyName].map(
+					(value) =>
+						importSingleProperty(propertyName, propertyDefinition, value)
+				);
+			} else {
+				this._content.properties[propertyName] = importSingleProperty(
+					propertyName,
+					propertyDefinition,
+					value
+				);
+			}
 		});
 
 		// Read all attachment stubs
 		if (doc._attachments) {
 			const attNames = Object.keys(doc._attachments);
+
 			attNames.forEach((attName) => {
 				// Retrieve the attachment name and filename
 				const name = attName.split("|")[0];
@@ -205,29 +196,24 @@ export class Entity {
 				const contentType = doc._attachments[attName].content_type;
 				const size = doc._attachments[attName].length;
 
-				// Get the attachment object
-				const attachment = this[name];
+				// Check if attachment name exists (else ignore the attachment)
+				if (this[name]) {
+					// Get the attachment object
+					const attachment = this[name];
 
-				// Define the stub
-				attachment.defineStub(filename, contentType, size);
+					// Define the stub
+					attachment.defineStub(filename, contentType, size);
+				}
 			});
 		}
 
 		// Read all references
-		if (this.document._references) {
-			Object.keys(this.document._references).forEach((key) => {
-				const relationship = Object.values(this.relationships).find(
-					(e) => e.rightPropertyName === key || e.leftPropertyName === key
-				);
-				if (relationship.type === "one-to-many") {
-					this.document._references[key] = doc[relationship.rightPropertyName];
-				}
-
-				if (relationship.type === "many-to-many") {
-					doc[relationship.leftPropertyName].forEach((id) => {
-						this.document._references[key].add(id);
-					});
-				}
+		if (this._content.references) {
+			Object.keys(this._content.references).forEach((key) => {
+				const relationship = this._definition.relationships[key];
+				const propertyName =
+					relationship.left.propertyName || relationship.right.propertyName;
+				this._content.references[key].set(doc[propertyName]);
 			});
 		}
 	}
@@ -237,68 +223,89 @@ export class Entity {
 	 * @returns {JSON} Json document to be saved in the CouchDB
 	 */
 	export() {
+		function exportSingleProperty(name, propertyDefinition, value) {
+			// Return Null if null
+			if (!value) return value;
+
+			// Check if it is a subentity
+			if (propertyDefinition.model) {
+				const exportedSubEntity = value.export();
+				delete exportedSubEntity._attachments;
+				delete exportedSubEntity._rev;
+				delete exportedSubEntity._deleted;
+			} else {
+				return value;
+			}
+		}
+
+		// Result document
 		var document = {};
 
 		// Standard CouchDB fields
-		document._id = this.document._id;
-		document._rev = this.document._rev;
-		document._delete = this.document._delete;
-		document.type = this.fullTypeName;
+		document._id = this._content.properties._id;
+		document._rev = this._content.properties._rev;
+		document._deleted = this._content.properties._deleted;
 
-		Object.keys(this.model.properties).forEach((propertyName) => {
-			const propertyDefinition = this.model.properties[propertyName];
+		// Type document
+		document.type = this.type;
+
+		// Map all properties (including sub-entities)
+		Object.keys(this._definition.model.properties).forEach((propertyName) => {
+			const propertyDefinition =
+				this._definition.model.properties[propertyName];
 
 			// Skip computed properties
 			if (propertyDefinition.computed) return;
 
-			if (propertyDefinition.model) {
-				var value;
-				if (propertyDefinition.multiple) {
-					// In case of multiple values, get the inner document for each element
-					value = this.document[propertyName].map((element) => {
-						const v = element.export();
-						delete v._attachments;
-						delete v._rev;
-						delete v._deleted;
-						return v;
-					});
-				} else {
-					// If it is a model, get the inner document
-					if (this.document[propertyName]) {
-						value = this.document[propertyName].export();
-						delete value._attachments;
-						delete value._rev;
-						delete value._deleted;
-					} else value = null;
-				}
-				document[propertyName] = value;
-			} else document[propertyName] = this.document[propertyName];
+			// Check if multiple values are allowed
+			if (propertyDefinition.multiple) {
+				document[propertyName] = this._content.properties[propertyName].map(
+					(value) =>
+						exportSingleProperty(propertyName, propertyDefinition, value)
+				);
+			} else {
+				document[propertyName] = exportSingleProperty(
+					propertyName,
+					propertyDefinition,
+					this._content.properties[propertyName]
+				);
+			}
 		});
 
-		// Relationships
-		if (this.document._references) {
-			// Create references
-			Object.keys(this.document._references).forEach((propertyName) => {
-				const reference = this.document._references[propertyName];
-				document[propertyName] = reference.data();
-			});
-		}
-
 		// Attachments
-		if (this.document.hasOwnProperty("_attachments")) {
+		if (this.hasAttachments) {
 			document._attachments = {};
+
 			// Create attachments
-			Object.keys(this.document._attachments).forEach((attName) => {
-				const attachment = this.document._attachments[attName];
+			Object.keys(this._content.attachments).forEach((attachmentName) => {
+				const attachment = this._content.attachments[attachmentName];
 
 				attachment.files.forEach((file) => {
-					document._attachments[attName + "|" + file.filename] = {
+					document._attachments[attachmentName + "|" + file.filename] = {
 						content_type: file.contentType,
 						data: file.data,
 					};
 				});
 			});
 		}
+
+		// Relationships
+		if (Object.keys(this._content.references).length > 0) {
+			// Create references
+			Object.keys(this._content.references).forEach((referenceName) => {
+				const reference = this._content.references[referenceName];
+
+				// Retrieve the property name
+				const relationship = this._definition.relationships[referenceName];
+				const propertyName =
+					relationship.left.propertyName || relationship.right.propertyName;
+
+				if (reference instanceof Reference)
+					document[propertyName] = reference.id;
+				else document[propertyName] = reference.idList;
+			});
+		}
+
 		return document;
 	}
 
@@ -313,12 +320,18 @@ export class Entity {
 		return entity;
 	}
 
+	//#endregion
+
+	//#region Database actions
+
 	/**
 	 * Save the document
 	 * @returns {Object} Result of the saving action
 	 */
 	async save() {
-		const service = this.namespace.getService(this.model.typeName);
+		const service = this._definition.namespace.getService(
+			this._definition.model.typeName
+		);
 		return await service.save(this);
 	}
 
@@ -326,13 +339,201 @@ export class Entity {
 	 * Refresh the entity (not saved changes will be lost)
 	 */
 	async refresh() {
-		const service = this.namespace.getService(this.model.typeName);
+		const service = this._definition.namespace.getService(
+			this._definition.model.typeName
+		);
 		const entity = await service.get(this.id);
 		Object.assign(this, entity);
 	}
 
-	hasAttachments() {
-		if (!this.document._attachments) return false;
-		return Object.keys(this.document._attachments).length > 0;
+	//#endregion
+
+	//#region Validations
+
+	/**
+	 * Validate the content of the entity
+	 */
+	validate() {
+		// Property validation
+		for (const [propertyName, propertyDefinition] of Object.entries(
+			this._definition.model.properties
+		)) {
+			// Current value to be validated
+			const value = this[propertyName];
+
+			if (propertyDefinition.multiple) {
+				if (value) {
+					// Validation of all elements
+					value.forEach((element) => {
+						this.validateProperty(element, propertyName, propertyDefinition);
+					});
+				}
+			} else {
+				// Validation of one element
+				this.validateProperty(value, propertyName, propertyDefinition);
+			}
+		}
+
+		// Attachment validations
+		if (this._definition.model.attachments) {
+			Object.keys(this._definition.model.attachments).forEach(
+				(attachmentName) => {
+					// Current attachment to be validated
+					const attachment = this[attachmentName];
+
+					// Validate it
+					this.validateAttachment(attachment);
+				}
+			);
+		}
+
+		// References validations
+		Object.keys(this._content.references).forEach((referenceName) => {
+			// Current reference to be validated
+			const value = this._content.references[referenceName];
+
+			// Validate it
+			value.validate();
+		});
 	}
+
+	/**
+	 * Validate a property value
+	 * @param {*} value Value to be validated
+	 * @param {String} name Name of the property
+	 * @param {Object} propertyDefinition Definition of the property
+	 */
+	validateProperty(value, name, propertyDefinition) {
+		// Check required attribute
+		if (propertyDefinition.required) {
+			let req = getValueOrFunction(propertyDefinition.required, this);
+			if (req) {
+				if (value == null)
+					throw new Error("Missing required value, null or undefined " + name);
+
+				if (typeof value === "string" && value.length === 0)
+					throw new Error("Missing required value, empty string");
+
+				if (typeof value === "object") {
+					if (Array.isArray(value) && value.length === 0)
+						throw new Error("Missing required value, empty array");
+
+					if (value.constructor === Object && Object.keys(value).length === 0)
+						throw new Error("Missing required value, empty object");
+				}
+			}
+		}
+
+		// If null it is ok (not required)
+		if (value == null) return;
+
+		// Check if value is supposed to be a sub-entity
+		if (propertyDefinition.model) {
+			// Check sub-entity type
+
+			if (
+				value.constructor.name != "Entity" ||
+				!value._definition.model ||
+				value._definition.namespace.name !=
+					propertyDefinition.model.split("/")[0] ||
+				value._definition.model.typeName !=
+					propertyDefinition.model.split("/")[1]
+			) {
+				throw new Error("Model mismatch, expected " + propertyDefinition.model);
+			}
+			value.validate();
+		} else {
+			// Static values
+
+			// Exclude models
+			if (value.constructor.name === "Entity")
+				throw new Error("Not expected an entity");
+
+			if (propertyDefinition.type) {
+				// Check property type rules
+				const propertyType = propertyDefinition.type;
+
+				if (propertyType.rules && propertyType.rules.length > 0) {
+					const result = checkRules(value, propertyType.rules, this);
+					if (typeof result === "string")
+						throw new Error("Invalid value: " + result);
+				}
+			}
+
+			// Check property rules
+			if (propertyDefinition.rules && propertyDefinition.rules.length > 0) {
+				const result = checkRules(value, propertyDefinition.rules, this);
+				if (typeof result === "string")
+					throw new Error("Invalid value: " + result);
+			}
+		}
+	}
+
+	/**
+	 * Validate an attachment
+	 * @param {Attachment} attachment Attachment to be validated
+	 */
+	validateAttachment(attachment) {
+		// Check requirement
+		let req = getValueOrFunction(attachment.required, this);
+		if (req) {
+			if (attachment.files.length === 0)
+				throw new Error(
+					"Missing required value attachment, " + attachment.name
+				);
+		}
+	}
+
+	/**
+	 * Return all rules applicable to a specific property
+	 * @param {String} propertyName Name of the property
+	 */
+	getValidationRules(propertyName) {
+		const rules = {};
+
+		const propertyDefinition = this._definition.model.properties[propertyName];
+
+		// Initialize rules for this property
+		if (!rules[propertyName]) rules[propertyName] = [];
+
+		// Skip computed property
+		if (propertyDefinition.computed) return rules;
+
+		// Check required attribute
+		if (propertyDefinition.required) {
+			let req = getValueOrFunction(propertyDefinition.required, this);
+			if (req) {
+				rules[propertyName].push((value) => {
+					if (
+						value == null ||
+						(typeof value === "string" && value.length === 0) ||
+						(typeof value === "object" &&
+							Array.isArray(value) &&
+							value.length === 0) ||
+						(typeof value === "object" &&
+							value.constructor === Object &&
+							Object.keys(value).length === 0)
+					)
+						return "Required value";
+					else return true;
+				});
+			}
+		}
+
+		// Check rules on property type
+		if (propertyDefinition.type) {
+			// Check property type rules
+			const propertyType = propertyDefinition.type;
+
+			if (propertyType.rules) rules[propertyName].push(...propertyType.rules);
+		}
+
+		// Rule on property
+		if (propertyDefinition.rules)
+			rules[propertyName].push(...propertyDefinition.rules);
+
+		return rules;
+	}
+
+	//#endregion
 }

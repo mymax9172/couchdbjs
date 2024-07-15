@@ -1,4 +1,3 @@
-import { Attachment } from "../model/attachment.js";
 import { DataService } from "./dataService.js";
 
 export class CollectionService extends DataService {

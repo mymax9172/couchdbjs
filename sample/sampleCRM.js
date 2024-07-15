@@ -212,5 +212,14 @@ export const SampleCRMSchema = {
 			right: "security/role",
 			required: true,
 		},
+
+		company_contacts: {
+			title: "Company-Contacts",
+			description: "Contacts associated with a company",
+			type: "one-to-many",
+			left: "business/company",
+			right: "business/contact",
+			required: true,
+		},
 	},
 };

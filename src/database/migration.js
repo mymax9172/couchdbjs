@@ -110,6 +110,16 @@ export class Migration {
 	async onDowngrade() {
 		throw new Error("Downgrade process not implemented");
 	}
+}
+
+export class MigrationAction {
+	name;
+	database;
+
+	constructor(name, database) {
+		this.name = name;
+		this.database = database;
+	}
 
 	/**
 	 * List all documents of a specific type
@@ -126,8 +136,32 @@ export class Migration {
 		else return documents.rows.map((row) => row.doc);
 	}
 
-	// Add a property
-	async addProperty(namespaceName, typeName, propertyName, defaultValue) {
+	/**
+	 * Draft a log of the action (to be finalized)
+	 * @param {json} payload Details of the action
+	 * @param {Number} docs Number of touched documents
+	 * @returns {json} Log of the completed action
+	 */
+	createLog(payload, docs) {
+		return {
+			action: this.name,
+			payload: payload,
+			when: Date.now(),
+			docs: docs || 0,
+		};
+	}
+
+	async run() {
+		throw new Error("Action not implemented");
+	}
+}
+
+class AddPropertyAction extends MigrationAction {
+	constructor(database) {
+		super("add-property", database);
+	}
+
+	async run(namespaceName, typeName, propertyName, defaultValue) {
 		try {
 			// Get documents
 			const documents = await this.list(namespaceName, typeName);
@@ -141,27 +175,35 @@ export class Migration {
 			// Bulk save
 			await this.database.pouchDb.bulkDocs(documents);
 
-			// Return migration action
-			return {
-				action: "add-property",
-				payload: {
+			// Return log
+			const log = this.createLog(
+				{
 					namespace: namespaceName,
 					type: typeName,
 					property: propertyName,
 					default: defaultValue,
 				},
-				when: Date.now(),
-				docs: documents.length,
+				documents.length
+			);
+			return {
+				ok: true,
+				log,
 			};
 		} catch (error) {
 			return {
+				ok: false,
 				error: error,
 			};
 		}
 	}
+}
 
-	// Remove a property
-	async removeProperty(namespaceName, typeName, propertyName) {
+class RemovePropertyAction extends MigrationAction {
+	constructor(database) {
+		super("remove-property", database);
+	}
+
+	async run(namespaceName, typeName, propertyName) {
 		try {
 			// Get documents
 			const documents = await this.list(namespaceName, typeName);
@@ -175,53 +217,78 @@ export class Migration {
 			// Bulk save
 			await this.database.pouchDb.bulkDocs(documents);
 
-			// Return migration action
-			return {
-				action: "remove-property",
-				payload: {
+			// Return log
+			const log = this.createLog(
+				{
 					namespace: namespaceName,
 					type: typeName,
 					property: propertyName,
 				},
-				when: Date.now(),
-				docs: documents.length,
+				documents.length
+			);
+			return {
+				ok: true,
+				log,
 			};
 		} catch (error) {
 			return {
-				error: error,
-			};
-		}
-	}
-
-	async changeProperty(namespaceName, typeName, propertyName, callback) {
-		try {
-			// Get documents
-			const documents = await this.list(namespaceName, typeName);
-
-			// Transform them
-			for (let i = 0; i < documents.length; i++) {
-				const document = documents[i];
-				document[propertyName] = callback(document[propertyName]);
-			}
-
-			// Bulk save
-			await this.database.pouchDb.bulkDocs(documents);
-
-			// Return migration action
-			return {
-				action: "change-property",
-				payload: {
-					namespace: namespaceName,
-					type: typeName,
-					property: propertyName,
-				},
-				when: Date.now(),
-				docs: documents.length,
-			};
-		} catch (error) {
-			return {
+				ok: false,
 				error: error,
 			};
 		}
 	}
 }
+
+class UpdatePropertyAction extends MigrationAction {
+	constructor(database) {
+		super("update-property", database);
+	}
+
+	async run(namespaceName, typeName, propertyName, callback) {
+		try {
+			// Get documents
+			const documents = await this.list(namespaceName, typeName);
+
+			// Transform them
+			const updatedDocuments = [];
+
+			for (let i = 0; i < documents.length; i++) {
+				const document = documents[i];
+				const originalValue = document[propertyName];
+				const newValue = callback(document[propertyName]);
+				if (originalValue != newValue) {
+					document[propertyName] = newValue;
+					updatedDocuments.push(document);
+				}
+			}
+
+			// Bulk save
+			await this.database.pouchDb.bulkDocs(updatedDocuments);
+
+			// Return log
+			const log = this.createLog(
+				{
+					namespace: namespaceName,
+					type: typeName,
+					property: propertyName,
+				},
+				updatedDocuments.length
+			);
+			return {
+				ok: true,
+				log,
+			};
+		} catch (error) {
+			return {
+				ok: false,
+				error: error,
+			};
+		}
+	}
+}
+
+export const StandardMigrationActions = {
+	addProperty: AddPropertyAction,
+	removeProperty: RemovePropertyAction,
+	updateProperty: UpdatePropertyAction,
+};

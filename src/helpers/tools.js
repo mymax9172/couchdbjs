@@ -26,7 +26,7 @@ export function getValueOrFunction(attribute, ...args) {
  * @param {...*} args Optional arguments to be passed to each rule
  * @returns {Boolean | String} True if validation is passes, a message string if it failed
  */
-export function validateRule(value, rules, ...args) {
+export function checkRules(value, rules, ...args) {
 	var validation = true;
 	rules.forEach((rule) => {
 		if (validation === true) {

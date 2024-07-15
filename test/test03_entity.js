@@ -74,11 +74,14 @@ describe("Entity class", function () {
 
 	it("Check a property with rules", function () {
 		const entity = namespace.createEntity("contact");
+		entity.city = "Los Angeles";
 		expect(() => {
 			entity.address = "main Street";
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.address = "street Main";
+			entity.validate();
 		}).not.to.throw();
 	});
 
@@ -86,18 +89,23 @@ describe("Entity class", function () {
 		const entity = namespace.createEntity("contact");
 		expect(() => {
 			entity.city = "Valid value";
+			entity.validate();
 		}).not.to.throw();
 		expect(() => {
 			entity.city = null;
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.city = "";
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.city = [];
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.city = {};
+			entity.validate();
 		}).to.throw();
 	});
 
@@ -125,21 +133,27 @@ describe("Entity class", function () {
 		const entity = namespace.createEntity("house");
 		expect(() => {
 			entity.balance = "acme";
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.balance = -1000;
+			entity.validate();
 		}).not.to.throw();
 		expect(() => {
 			entity.active = "acme";
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.active = true;
+			entity.validate();
 		}).not.to.throw();
 		expect(() => {
 			entity.age = 0.5;
+			entity.validate();
 		}).to.throw();
 		expect(() => {
 			entity.age = 20;
+			entity.validate();
 		}).not.to.throw();
 		entity.birthday = new Date("2000-12-31");
 		entity.should.have.property("birthday").that.is.a("date");
@@ -156,80 +170,65 @@ describe("Entity class", function () {
 		const entity = namespace.createEntity("house");
 		expect(() => {
 			entity.addresses = [10, 20];
+			entity.validate();
 		}).to.throw();
 	});
 
 	it("Use nested javascript object", function () {
-		const entity = namespace.createEntity("company");
-		entity.address = {
-			street: "main street",
-			number: "10",
-		};
+		const entity = namespace.createEntity("house");
 		expect(() => {
-			entity.address = {
+			entity.estateInfo = {
 				street: "main street",
 				number: "10",
 			};
+			entity.validate();
 		}).not.to.throw();
 	});
 
 	it("Use nested entity with a wrong type", function () {
-		const entity = namespace.createEntity("company");
+		const entity = namespace.createEntity("house");
 		expect(() => {
-			entity.user = { name: "max" };
+			entity.owner = { name: "max" };
+			entity.validate();
 		}).to.throw();
 	});
 
 	it("Use nested entity with a proper type", function () {
-		const company = namespace.createEntity("company");
-		const user = namespace.createEntity("user");
-		company.user = user;
+		const house = namespace.createEntity("house");
+		const user = namespace.createEntity("user1");
 		expect(() => {
-			company.user = user;
+			house.user = user;
+			house.validate();
 		}).not.to.throw();
-		company.user.should.be.an.instanceof(Entity);
+		house.user.should.be.an.instanceof(Entity);
 	});
 
 	it("Manage nested property as array", function () {
-		const entity = namespace.createEntity("company");
-		const users = [];
+		const house = namespace.createEntity("house");
+		const owners = [];
 		for (let i = 0; i < 5; i++) {
-			const user = namespace.createEntity("user");
-			user.username = "user" + i;
-			users.push(user);
+			const owner = namespace.createEntity("user1");
+			owner.username = "owner " + i;
+			owners.push(owner);
 		}
 		expect(() => {
-			entity.managers = users;
+			house.coOwners = owners;
+			house.validate();
 		}).not.to.throw();
-		entity.managers[0].should.be.an.instanceof(Entity);
+		house.coOwners[0].should.be.an.instanceof(Entity);
 	});
 
 	it("Control nested value in an array", function () {
-		const entity = namespace.createEntity("company");
-		const users = [];
+		const house = namespace.createEntity("house");
+		const owners = [];
 		for (let i = 0; i < 5; i++) {
-			const user = {};
-			user.username = "user" + i;
-			users.push(user);
+			const owner = namespace.createEntity("user2");
+			owner.username = "owner " + i;
+			owners.push(owner);
 		}
 		expect(() => {
-			entity.managers = users;
+			house.coOwners = owners;
+			house.validate();
 		}).to.throw();
-	});
-
-	it("Deep hierarchy of entities", function () {
-		const organization = namespace.createEntity("organization");
-		const company = namespace.createEntity("company");
-		const managers = [];
-		for (let i = 0; i < 5; i++) {
-			const user = namespace.createEntity("user");
-			user.username = "manager " + i;
-			managers.push(user);
-		}
-		company.managers = managers;
-		expect(() => {
-			organization.company = company;
-		}).not.to.throw();
-		organization.company.managers[0].should.be.an.instanceof(Entity);
 	});
 });

@@ -54,31 +54,25 @@ export class DataService {
 	}
 
 	/**
-	 * Save an entity 
+	 * Save an entity
 	 * @param {Entity} entity Entity to be saved
 	 * @returns {Promise<object>} Result of the action
 	 */
 	async save(entity) {
 		// Validation
 		try {
-			entity.validate();
+			if (!entity.draft) entity.validate();
 		} catch (error) {
 			throw new Error(
-				"Validation error of type " +
-					entity.model.typeName +
-					" (" +
-					entity +
-					"): " +
-					error
+				"Validation error of type " + model.typeName + ": " + error
 			);
 		}
 
 		try {
 			// Save it
 			const json = entity.export();
-
 			const result = await this.namespace.database.pouchDb.put(json);
-			if (result.ok) entity.document._rev = result.rev;
+			if (result.ok) entity._content.properties._rev = result.rev;
 
 			return result;
 		} catch (error) {
@@ -99,7 +93,7 @@ export class DataService {
 		// Validation
 		try {
 			entities.forEach((entity) => {
-				entity.validate;
+				if (!entity.draft) entity.validate;
 			});
 		} catch (error) {
 			throw new Error(
@@ -117,7 +111,8 @@ export class DataService {
 
 			const result = await this.namespace.database.pouchDb.bulkDocs(docs);
 			result.forEach((resultItem, index) => {
-				if (resultItem.ok) entities[index].document._rev = resultItem.rev;
+				if (resultItem.ok)
+					entities[index]._content.properties._rev = resultItem.rev;
 			});
 			return result;
 		} catch (error) {

@@ -3,7 +3,7 @@ import { SingletonService } from "../services/singletonService.js";
 import { CollectionService } from "../services/collectionService.js";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 import { coding } from "../helpers/coding.js";
-import { Relationship } from "./relationship.js";
+import { Relationship } from "../model/relationship.js";
 
 /**
  * Class for a CouchDB database

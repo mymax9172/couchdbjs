@@ -73,14 +73,13 @@ describe("References", function () {
 		company.address = "main street";
 		await company.save();
 
-		expect(() => {
+		expect(async () => {
 			project.company = company.id;
+			await project.save();
 		}).not.to.throw();
-		await project.save();
 
-		expect(project.company.get()).to.be.null;
-		await project.company.load();
-		expect(project.company.get()).to.be.not.null;
+		const c = await project.company.get();
+		c.should.not.be.null;
 
 		const projects = await company.getProjectList();
 		expect(projects[0].id).to.be.equal(project.id);
@@ -92,22 +91,23 @@ describe("References", function () {
 		project = namespace.createEntity("project");
 		const company = namespace.createEntity("company");
 
+		const authors = [];
 		for (let i = 0; i < 5; i++) {
-			const user = namespace.createEntity("user");
-			user.username = "user" + i;
-			project.userList.add(user);
-
-			await user.save();
+			const author = namespace.createEntity("author");
+			author.username = "author " + i;
+			authors.push(author);
+			await author.save();
 		}
-		project.company = company.id;
+		project.authorList = authors;
+		project.company = company;
 		expect(await project.save()).not.to.throw;
 	});
 
 	it("Load entity with references", async function () {
 		const p = await db.data.default.project.get(project.id);
 
-		p.userList.get()[0].id === project.userList.get()[0].id;
-		expect(p.userList.get()[0].id === project.userList.get()[0].id).to.be.true;
-		//console.log(project.userList.references[0].get());
+		const v1 = (await p.authorList.getAll())[0].id;
+		const v2 = (await project.authorList.get(v1)).id;
+		expect(v1 === v2).to.be.true;
 	});
 });

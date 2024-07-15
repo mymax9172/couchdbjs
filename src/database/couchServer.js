@@ -4,8 +4,7 @@ import PouchdbFind from "pouchdb-find";
 import { CouchDatabase } from "./couchDatabase.js";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 import { coding } from "../helpers/coding.js";
-import { Relationship } from "./relationship.js";
-import { Buffer } from "buffer";
+import { Relationship } from "../model/relationship.js";
 
 /**
  * Server class for a CouchDB server
@@ -262,7 +261,6 @@ export class CouchServer {
 					ddoc: index.name,
 					fields: [...index.fields],
 				};
-
 				await db.createIndex(indexDefinition);
 			});
 		}
