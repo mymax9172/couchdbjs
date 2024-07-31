@@ -92,7 +92,7 @@ export class ReferenceList {
 	 * Return all inner entities
 	 * @returns {Array<Entity>} Inner entities of the reference list
 	 */
-	async getAll() {
+	async get() {
 		if (this.idList.length === 0) return [];
 		for (let i = 0; i < this.entityList.length; i++) {
 			if (this.entityList[i] == null)
@@ -100,18 +100,6 @@ export class ReferenceList {
 		}
 
 		return this.entityList;
-	}
-
-	/**
-	 * Return an inner entities
-	 * @returns {Array<Entity>} Inner entities of the reference list
-	 */
-	async get(id) {
-		const i = this.idList.indexOf(id);
-		if (i === -1) throw new Error("Id " + id + " not found in the list");
-		if (this.entityList[i] == null)
-			this.entityList[i] = await this.service.get(this.idList[i]);
-		return this.entityList[i];
 	}
 
 	/**

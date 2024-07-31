@@ -106,8 +106,8 @@ describe("References", function () {
 	it("Load entity with references", async function () {
 		const p = await db.data.default.project.get(project.id);
 
-		const v1 = (await p.authorList.getAll())[0].id;
-		const v2 = (await project.authorList.get(v1)).id;
+		const v1 = (await p.authorList.get())[0].id;
+		const v2 = (await project.authorList.get())[0].id;
 		expect(v1 === v2).to.be.true;
 	});
 });

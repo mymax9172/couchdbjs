@@ -2,6 +2,9 @@ export const Schema = {
 	// Version of the schema (number 1,2, ...)
 	version: 1,
 
+	// Custom types
+	types: {},
+
 	// Namespaces
 	namespaces: {
 		// Name of the namespace and array of models

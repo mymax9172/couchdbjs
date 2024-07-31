@@ -58,10 +58,10 @@ const User2 = {
 			},
 		},
 		lastName: {
-			type: CapitalizedPropertyType,
+			type: "CapitalizedPropertyType",
 		},
 		zips: {
-			type: ZipCodePropertyType,
+			type: "ZipCodePropertyType",
 			multiple: true,
 		},
 	},
@@ -72,7 +72,7 @@ const Contact = {
 	service: "collection",
 	properties: {
 		zipCode: {
-			type: ZipCodePropertyType,
+			type: "ZipCodePropertyType",
 		},
 		guid: {
 			// Using function
@@ -123,20 +123,20 @@ const House = {
 	service: "collection",
 	properties: {
 		addresses: {
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			multiple: true,
 		},
 		balance: {
-			type: StandardTypes.NumberPropertyType,
+			type: "NumberPropertyType",
 		},
 		active: {
-			type: StandardTypes.BooleanPropertyType,
+			type: "BooleanPropertyType",
 		},
 		age: {
-			type: StandardTypes.IntegerPropertyType,
+			type: "IntegerPropertyType",
 		},
 		birthday: {
-			type: StandardTypes.DateTimePropertyType,
+			type: "DateTimePropertyType",
 		},
 		estateInfo: {},
 		owner: {
@@ -202,6 +202,11 @@ const Contract = {
 
 export const ExampleDbSchema = {
 	version: 1,
+
+	types: {
+		CapitalizedPropertyType,
+		ZipCodePropertyType,
+	},
 
 	namespaces: {
 		default: {

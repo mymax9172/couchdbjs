@@ -16,7 +16,7 @@ const BasePropertyType = {
 	 * @returns {String} Stringified property value
 	 */
 	toString(value, options) {
-		return value;
+		return value?.toString?.() || value;
 	},
 
 	/**

@@ -62,6 +62,8 @@ describe("Entity class", function () {
 	it("Use a PropertyType to check format of a zipcode", function () {
 		const entity = namespace.createEntity("contact");
 		entity.zipCode = "20100";
+		entity.city = "LA";
+		expect(() => entity.validate()).not.to.throw();
 	});
 
 	it("Check a readonly property with rules in the property definition type", function () {

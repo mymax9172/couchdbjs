@@ -4,6 +4,7 @@ import { CollectionService } from "../services/collectionService.js";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 import { coding } from "../helpers/coding.js";
 import { Relationship } from "../model/relationship.js";
+import { StandardTypes } from "../model/standardTypes.js";
 
 /**
  * Class for a CouchDB database
@@ -27,11 +28,14 @@ export class CouchDatabase {
 	// Namespaces
 	namespaces = {};
 
-	// Data services
-	data = {};
-
 	// Relationships
 	relationships = {};
+
+	// Custom types
+	types = {};
+
+	// Data services
+	data = {};
 
 	/**
 	 * Create a new CouchDB database instance
@@ -69,23 +73,36 @@ export class CouchDatabase {
 		// Save schema
 		this.schema = schema;
 
-		// Read the schema and setup the instance
-		Object.keys(schema.namespaces).forEach((namespaceKey) => {
-			const namespaceDefinition = schema.namespaces[namespaceKey];
-
-			const namespace = new Namespace();
-			namespace.name = namespaceKey;
-			namespace.title = namespaceDefinition.title;
-			namespace.description = namespaceDefinition.description;
-
-			namespaceDefinition.models.forEach((model) => {
-				namespace.useModel(coding.deserialize(model));
-			});
-
-			this.useNamespace(namespace);
+		// Add standard types and (if any) custom types
+		Object.keys(StandardTypes).forEach((typeName) => {
+			this.types[typeName] = StandardTypes[typeName];
 		});
+		if (schema.types) {
+			Object.keys(schema.types).forEach((typeName) => {
+				const typeDefinition = schema.types[typeName];
+				this.types[typeName] = coding.deserialize(typeDefinition);
+			});
+		}
 
-		// Read all relationships
+		// Read all namespaces (if any)
+		if (schema.namespaces) {
+			Object.keys(schema.namespaces).forEach((namespaceKey) => {
+				const namespaceDefinition = schema.namespaces[namespaceKey];
+
+				const namespace = new Namespace();
+				namespace.name = namespaceKey;
+				namespace.title = namespaceDefinition.title;
+				namespace.description = namespaceDefinition.description;
+
+				namespaceDefinition.models.forEach((model) => {
+					namespace.useModel(coding.deserialize(model));
+				});
+
+				this.useNamespace(namespace);
+			});
+		}
+
+		// Read all relationships (if any)
 		if (schema.relationships) {
 			const keys = Object.keys(schema.relationships);
 			keys.forEach((relationshipName) => {
@@ -175,5 +192,19 @@ export class CouchDatabase {
 	 */
 	async getSchema() {
 		await this.pouchDb.get("$/schema");
+	}
+
+	/**
+	 * Generate an entity from a document
+	 * @param {json} doc Json document
+	 */
+	generate(doc) {
+		if (!doc.type) throw new Error("Document does not have any type");
+		const namespaceName = doc.type.split("/")[0];
+		const typeName = doc.type.split("/")[1];
+
+		const entity = this.namespaces[namespaceName].createEntity(typeName);
+		entity.import(doc);
+		return entity;
 	}
 }

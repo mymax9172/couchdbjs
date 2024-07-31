@@ -2,7 +2,6 @@ import { CouchServer } from "../src/database/couchServer.js";
 import { SampleCRMSchema } from "./sampleCRM.js";
 import { faker } from "@faker-js/faker";
 import "dotenv/config";
-import * as fs from "fs";
 
 // Sample database
 const dbName = "sample-crm";
@@ -16,7 +15,6 @@ const settings = {
 const server = new CouchServer(process.env.URL, process.env.PORT, {
 	username: process.env.USER,
 	password: process.env.PASSWORD,
-	token: process.env.TOKEN,
 });
 
 // Get server info
@@ -38,10 +36,14 @@ const database = await server.use(dbName);
 // Create roles
 const roles = [];
 const roleInput = [
-	{ name: "Admin", description: "Administrator" },
-	{ name: "User", description: "User" },
-	{ name: "Sales", description: "Sales representative" },
-	{ name: "Presales", description: "Solution consuntant" },
+	{ type: "security/role", name: "Admin", description: "Administrator" },
+	{ type: "security/role", name: "User", description: "User" },
+	{ type: "security/role", name: "Sales", description: "Sales representative" },
+	{
+		type: "security/role",
+		name: "Presales",
+		description: "Solution consuntant",
+	},
 ];
 
 for (let i = 0; i < roleInput.length; i++) {

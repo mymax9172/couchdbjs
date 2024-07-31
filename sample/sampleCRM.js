@@ -14,29 +14,29 @@ const Address = {
 		streetName: {
 			title: "Street name",
 			description: "Name of the street (including street number)",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			required: true,
 		},
 		zipCode: {
 			title: "Zip code",
 			description: "Postal code",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 		},
 		location: {
 			title: "Location",
 			description: "City, town, place",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			required: true,
 		},
 		state: {
 			title: "State",
 			description: "State, land or province",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 		},
 		country: {
 			title: "Country",
 			description: "Name of the country, nation",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			required: true,
 		},
 	},
@@ -59,7 +59,7 @@ const Company = {
 		name: {
 			title: "Name",
 			description: "Name of the company",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			required: true,
 		},
 		mainAddress: {
@@ -84,19 +84,19 @@ const Contact = {
 		firstName: {
 			title: "First name",
 			description: "First or given name",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			required: true,
 		},
 		lastName: {
 			title: "Last name",
 			description: "Last name, family name, surname",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			required: true,
 		},
 		fullName: {
 			title: "Full name",
 			description: "Full name (first and last name)",
-			type: StandardTypes.TextPropertyType,
+			type: "TextPropertyType",
 			computed() {
 				return this.firstName + " " + this.lastName;
 			},
@@ -104,7 +104,7 @@ const Contact = {
 		active: {
 			title: "Active",
 			description: "Active contact can be used for interactions",
-			type: StandardTypes.BooleanPropertyType,
+			type: "BooleanPropertyType",
 			required: true,
 			default: true,
 		},
@@ -137,7 +137,7 @@ const User = {
 		active: {
 			title: "Active",
 			description: "Active user can login the software",
-			type: StandardTypes.BooleanPropertyType,
+			type: "BooleanPropertyType",
 			required: true,
 			default: true,
 		},
@@ -180,7 +180,7 @@ const Role = {
 		active: {
 			title: "Active",
 			description: "Indicates if the role is active or not",
-			type: StandardTypes.BooleanPropertyType,
+			type: "BooleanPropertyType",
 			required: true,
 			default: true,
 		},
@@ -190,6 +190,8 @@ const Role = {
 export const SampleCRMSchema = {
 	version: 1,
 
+	types: {},
+	
 	namespaces: {
 		business: {
 			title: "Business",

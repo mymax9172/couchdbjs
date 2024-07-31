@@ -6,6 +6,7 @@ import {
 import { security } from "../helpers/security.js";
 import { Attachment } from "./attachment.js";
 import { Reference, ReferenceList } from "./reference.js";
+import { Property } from "./property.js";
 
 export class EntityFactory {
 	typeName;
@@ -30,8 +31,12 @@ export class EntityFactory {
 		// Retrieve the model
 		const model = this.namespace.getModel(this.typeName);
 
-		// Create a brand new entity
-		const entity = new Entity(this.namespace, model);
+		// Create a brand new entity with the name of the model
+		const className =
+			model.typeName[0].toUpperCase() + model.typeName.slice(1) + "Entity";
+		const subClass = "(class " + className + " extends Entity {})";
+		const type = eval(subClass);
+		const entity = new type(this.namespace, model);
 
 		// Create all properties
 		Object.keys(model.properties).forEach((propertyName) => {
@@ -71,116 +76,21 @@ export class EntityFactory {
 		checkMandatoryArgument("name", name);
 		checkMandatoryArgument("propertyDefinition", propertyDefinition);
 
-		// Internal function to write a value to the inner document
-		function writeValue(value) {
-			var updatedValue = value;
-
-			if (propertyDefinition.beforeWrite)
-				updatedValue = propertyDefinition.beforeWrite(updatedValue);
-
-			// Check if a property type is defined
-			if (propertyDefinition.type) {
-				const propertyType = propertyDefinition.type;
-				if (propertyType.beforeWrite)
-					updatedValue = propertyType.beforeWrite(updatedValue);
-			}
-
-			// Check if it must be decrypted or hashed
-			if (propertyDefinition.encrypted) {
-				updatedValue = security.encryption(updatedValue);
-			} else if (propertyDefinition.hashed)
-				updatedValue = security.hash(updatedValue);
-
-			entity._content.properties[name] = updatedValue;
-		}
-
-		// Internal function to read a value from the inner document
-		function readValue(value) {
-			// Check if a property type is defined
-			var updatedValue = value;
-
-			// Nothing to do if the value has been hashed
-			if (propertyDefinition.hashed) return updatedValue;
-
-			// Decrypt the value if encrypted
-			if (propertyDefinition.encrypted)
-				updatedValue = security.decryption(updatedValue);
-
-			// Check trasformations
-			if (propertyDefinition.type) {
-				const propertyType = propertyDefinition.type;
-				if (propertyType.afterRead)
-					updatedValue = propertyType.afterRead(updatedValue);
-			}
-
-			if (propertyDefinition.afterRead) {
-				updatedValue = propertyDefinition.afterRead(updatedValue);
-			}
-
-			return updatedValue;
-		}
-
-		// Internal function to get the default value
-		function getDefault(propertyDefinition) {
-			if (propertyDefinition.hasOwnProperty("default")) {
-				// Retrive the default value
-				return getValueOrFunction(propertyDefinition.default);
-			} else {
-				// Default value is not defined
-				if (propertyDefinition.multiple) return [];
-				else return null;
-			}
-		}
-
-		// Get the default value
-		if (!propertyDefinition.computed) {
-			const defaultValue = getDefault(propertyDefinition);
-			writeValue(defaultValue);
-		}
+		// Create a new Property
+		propertyDefinition.name = name;
+		const property = new Property(entity, propertyDefinition);
 
 		// Define getters and setters
 		Object.defineProperty(entity, name, {
 			// Getter
 			get() {
-				// Check if property is computed
-				if (propertyDefinition.computed) {
-					return propertyDefinition.computed.bind(entity)();
-				} else {
-					const value = readValue(entity._content.properties[name]);
-
-					// Return empty value as it is
-					return value;
-				}
+				return property.get();
 			},
 
 			// Setter
 			set(value) {
-				let readonly = false;
-
-				if (propertyDefinition.readonly)
-					readonly = getValueOrFunction(propertyDefinition.readonly, entity);
-
-				// Check if for this property 'set' is allowed
-				if (propertyDefinition.computed || readonly) {
-					throw new Error(
-						"Couldn't assign a value to a computed/readonly property"
-					);
-				}
-
-				// Check if an array has been assigned
-				if (Array.isArray(value) && !propertyDefinition.multiple) {
-					throw new Error(
-						"Couldn't assign an array when multiple values are not allowed"
-					);
-				}
-				if (!Array.isArray(value) && propertyDefinition.multiple) {
-					throw new Error(
-						"Couldn't assign a single value when multiple values are required"
-					);
-				}
-
-				// Store value in the document
-				writeValue(value);
+				// Store the value in the property
+				property.set(value);
 			},
 		});
 	}
@@ -239,7 +149,6 @@ export class EntityFactory {
 			}
 
 			// Create the query method
-
 			entity[functionName] = async function () {
 				// Define the query
 				const query = {};

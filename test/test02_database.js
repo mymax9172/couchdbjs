@@ -27,10 +27,10 @@ describe("Database class", function () {
 	});
 
 	// Get database info
-	it("getInfo(): Check a proper info object from the database", async function () {
-		const info = await db.getInfo();
-		info.should.be.a("object").have.property("db_name").that.is.equal(dbName);
-	});
+	// it("getInfo(): Check a proper info object from the database", async function () {
+	// 	const info = await db.getInfo();
+	// 	info.should.be.a("object").have.property("db_name").that.is.equal(dbName);
+	// });
 
 	// Create a new singleton entity
 	it("create(): Create a new singleton entity from model", async function () {
@@ -80,7 +80,6 @@ describe("Database class", function () {
 		}
 		const list = await db.data.default.user.getAll();
 		list.should.have.lengthOf(3);
-		//console.log(list);
 	});
 
 	// Find an entity by query

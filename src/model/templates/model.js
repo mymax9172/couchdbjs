@@ -106,6 +106,10 @@ export const Model = {
 			limit: 1, // If multiple define how many files are accepted
 		},
 	},
+
+	// Overole rules, appòlicable at entity level
+	rules: [],
+
 	// Indexes
 	indexes: [],
 };

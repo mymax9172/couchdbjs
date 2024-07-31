@@ -15,6 +15,7 @@ export function checkMandatoryArgument(argumentName, value) {
  * @returns {*} Value of the attribute
  */
 export function getValueOrFunction(attribute, ...args) {
+	if (attribute == null) return null;
 	if (typeof attribute === "function") return attribute(...args);
 	else return attribute;
 }

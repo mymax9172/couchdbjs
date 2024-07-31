@@ -3,7 +3,7 @@ const ownerModel = {
 	service: "singleton",
 	properties: {
 		firstName: {
-			default: "default name",
+			default: "anonymous",
 		},
 		lastName: {},
 		fullName: {
@@ -19,7 +19,7 @@ const userModel = {
 	service: "collection",
 	properties: {
 		firstName: {
-			default: "default name",
+			default: "anonymous",
 		},
 		lastName: {},
 		fullName: {

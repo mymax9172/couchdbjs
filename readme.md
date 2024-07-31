@@ -663,7 +663,7 @@ const server = new CouchServer(url, 5984, {
 
 **async isUp()**
 
-> Return true if the server is up and runningCreate a new CouchServer instance
+> Return true if the server is up and running
 
 ```js
 import { CouchServer } from "couchdbjs";
@@ -745,7 +745,7 @@ if (await server.hasSchema("test"))
 > name: name of the database  
 > schema:(optional) schema definition
 
-Without a schema definition this methods just create an empty database in the connected server. Usign a schema is highly recommended to take advantage of this library.
+Without a schema definition this methods just create an empty database in the connected server. Using a schema is highly recommended to take advantage of this library.
 
 Returned object:
 
@@ -806,7 +806,7 @@ const database = await server.use("test");
 
 ### CouchDatabase
 
-Do not create a CouchDatabase instance using "new", only by the use method of a CouchServer instance
+Do not create a CouchDatabase instance using "new", use the 'use' method on a CouchServer instance instead
 
 **async getInfo()**
 
@@ -842,11 +842,15 @@ console.log(await database.getSchema());
 
 ### Schema definition
 
-It is a javascript object where it is defined how the database is structured (its schema). It has a version property (integer from 1 onward) and a collection of namespaces and relationships (see below)
+It is a javascript object where it is defined how the database is structured (its schema). It has a version property (integer from 1 onward) and a collection of types, namespaces and relationships (see below)
 
 ```js
 export const SampleCRMSchema = {
 	version: 1,
+
+	types: {
+		// ...
+	},
 
 	namespaces: {
 		// ...
@@ -890,10 +894,10 @@ export const SampleCRMSchema = {
 
 In this example there are two namespaces, one is called "Business", it combines all business entity models, the other is called "Security", it combines all security related entity models
 
-To propertly identify a data model it is important to use the namespace and it is type name, so business/company not just company
+To propertly identify a data model it is important to use the namespace name and it is type name, so business/company not just company
 
 ### Entity model
 
-An entity model is the proper description of the entity. It is a javascript object 
+An entity model is the proper description of the entity. It is a javascript object
 
 ### Relationship definition

@@ -1,3 +1,4 @@
+import { detailedDiff } from "deep-object-diff";
 import { checkMandatoryArgument } from "../helpers/tools.js";
 
 export class DataService {
@@ -64,7 +65,10 @@ export class DataService {
 			if (!entity.draft) entity.validate();
 		} catch (error) {
 			throw new Error(
-				"Validation error of type " + model.typeName + ": " + error
+				"Validation error of type " +
+					entity._definition.model.typeName +
+					": " +
+					error
 			);
 		}
 
@@ -144,5 +148,44 @@ export class DataService {
 		};
 		const result = await this.namespace.database.pouchDb.createIndex(indexDef);
 		return result;
+	}
+
+	// Get revisions
+	async getRevisions(id) {
+		const reader = await this.get(id, {
+			revisions: true,
+			original: true,
+		});
+		const doc = reader.doc;
+
+		const revisions = [];
+		const result = [];
+		try {
+			// Read all revisions
+			for (let i = 0; i < doc._revs_info.length; i++) {
+				const rev = "" + doc._revs_info[i].rev;
+				const revision = await this.namespace.database.pouchDb.get(doc._id, {
+					rev,
+					include_docs: true,
+				});
+				revisions.unshift(revision);
+			}
+
+			// Create differences
+			for (let i = 0; i < revisions.length; i++) {
+				const rev = {
+					rev: revisions[i]._rev,
+				};
+
+				if (i > 0) rev.audit = detailedDiff(revisions[i - 1], revisions[i]);
+				else rev.audit = detailedDiff(null, revisions[i]);
+				result.unshift(rev);
+			}
+
+			return result;
+		} catch (error) {
+			console.log(error);
+			return null;
+		}
 	}
 }

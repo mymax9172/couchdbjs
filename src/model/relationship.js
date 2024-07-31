@@ -14,6 +14,10 @@ class RelationshipSide {
 		this.namespaceName = split[0];
 		this.typeName = split[1];
 	}
+
+	get type() {
+		return this.namespaceName + "/" + this.typeName;
+	}
 }
 
 export class Relationship {
