@@ -19,7 +19,8 @@ export const security = {
 	 */
 	hash(value) {
 		if (!value) return value;
-		return CryptoJS.SHA256(value).toString();
+		if (value.startsWith("$-")) return value;
+		else return "$-" + CryptoJS.SHA256(value).toString();
 	},
 
 	/**

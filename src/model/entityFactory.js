@@ -1,8 +1,5 @@
 import { Entity } from "./entity.js";
-import {
-	checkMandatoryArgument,
-	getValueOrFunction,
-} from "../helpers/tools.js";
+import { checkMandatoryArgument } from "../helpers/tools.js";
 import { security } from "../helpers/security.js";
 import { Attachment } from "./attachment.js";
 import { Reference, ReferenceList } from "./reference.js";
@@ -32,11 +29,11 @@ export class EntityFactory {
 		const model = this.namespace.getModel(this.typeName);
 
 		// Create a brand new entity with the name of the model
-		const className =
-			model.typeName[0].toUpperCase() + model.typeName.slice(1) + "Entity";
-		const subClass = "(class " + className + " extends Entity {})";
-		const type = eval(subClass);
-		const entity = new type(this.namespace, model);
+		// const className =
+		// 	model.typeName[0].toUpperCase() + model.typeName.slice(1) + "Entity";
+		// const subClass = "(class " + className + " extends Entity {})";
+		// const type = eval(subClass);
+		const entity = new Entity(this.namespace, model);
 
 		// Create all properties
 		Object.keys(model.properties).forEach((propertyName) => {

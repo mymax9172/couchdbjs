@@ -8,6 +8,8 @@ import { Namespace } from "./namespace.js";
 import { Reference } from "./reference.js";
 
 export class Entity {
+	type;
+
 	// Content
 	_content = {
 		draft: false,
@@ -40,6 +42,8 @@ export class Entity {
 
 		this._definition.namespace = namespace;
 		this._definition.model = model;
+
+		this.type = namespace.name + "/" + model.typeName;
 
 		// Unique id
 		switch (model.service) {

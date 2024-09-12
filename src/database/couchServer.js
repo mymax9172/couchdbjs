@@ -227,18 +227,6 @@ export class CouchServer {
 		return database;
 	}
 
-	// /**
-	//  * Migrate a database to a new version
-	//  * @param {String} name Name of the database
-	//  * @param {Migration} migrationClass Migration class to be used
-	//  * @param {string} [direction="up"] Direction of the migration
-	//  */
-	// async migrate(name, migrationClass, direction = "up") {
-	// 	const db = await this.use(name);
-	// 	const migration = new migrationClass(db);
-	// 	if (direction === "up") migration.up()
-	// }
-
 	/**
 	 * Create the schema and indexes
 	 * @param {PouchDB} db Pouchdb instance

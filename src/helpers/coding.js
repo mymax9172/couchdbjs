@@ -82,7 +82,7 @@ export const coding = {
 		else args = fS.substring(i1 + 1, i2).split(",");
 
 		// Body
-		if (i3 > 0) {
+		if (i3 > 0 && fS.substring(i2 + 1, i3).trim() === "") {
 			// Arrow function
 			let i4 = fS.indexOf("{", i3);
 			if (i4 === -1) {

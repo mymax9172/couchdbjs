@@ -42,7 +42,7 @@ export class Property {
 		this.name = propertyDefinition.name;
 		this.title = propertyDefinition.title;
 		this.description = propertyDefinition.description;
-		if (propertyDefinition.default) this.default = propertyDefinition.default;
+		this.default = propertyDefinition.default;
 		if (propertyDefinition.computed)
 			this.computed = propertyDefinition.computed;
 		this.required = propertyDefinition.required || false;
@@ -52,7 +52,7 @@ export class Property {
 		if (propertyDefinition.type) {
 			if (!entity._definition.namespace.database.types[propertyDefinition.type])
 				throw new Error(
-					"Type " + propertyDefinition.type + " not defined in this schema"
+					"Type " + propertyDefinition.type.name + " not defined in this schema"
 				);
 			this.type =
 				entity._definition.namespace.database.types[propertyDefinition.type];
@@ -75,7 +75,7 @@ export class Property {
 		// Initial value
 		if (!this.computed) {
 			// Default value
-			if (this.default) {
+			if (this.default != null) {
 				// Retrieve the default value
 				this.set(getValueOrFunction(this.default));
 			} else {
@@ -126,7 +126,9 @@ export class Property {
 
 		// Check if it must be decrypted or hashed
 		if (this.encrypted) updatedValue = security.encryption(updatedValue);
-		else if (this.hashed) updatedValue = security.hash(updatedValue);
+		else if (this.hashed) {
+			updatedValue = security.hash(updatedValue);
+		}
 
 		this.value = updatedValue;
 	}
@@ -155,15 +157,8 @@ export class Property {
 		return updatedValue;
 	}
 
-	// Internal function to get the default value
-	getDefault() {
-		if (this.default) {
-			// Retrive the default value
-			return getValueOrFunction(this.default);
-		} else {
-			// Default value is not defined
-			if (this.multiple) return [];
-			else return null;
-		}
+	format(options) {
+		if (this.type.format) return this.type.format(this.get(), options);
+		else return this.get();
 	}
 }

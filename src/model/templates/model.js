@@ -15,6 +15,9 @@ export const Model = {
 	// Internal model is never saved as standalone document (but inside other documents)
 	internal: false,
 
+	// Allow custom properties
+	customizable: false,
+
 	// Properties
 	properties: {
 		name: {

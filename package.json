@@ -1,6 +1,6 @@
 {
 	"name": "couchdb-schema",
-	"version": "0.0.7",
+	"version": "0.0.10",
 	"description": "CouchDB Schema model library",
 	"main": "index.js",
 	"type": "module",

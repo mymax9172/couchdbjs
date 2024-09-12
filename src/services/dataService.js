@@ -76,7 +76,7 @@ export class DataService {
 			// Save it
 			const json = entity.export();
 			const result = await this.namespace.database.pouchDb.put(json);
-			if (result.ok) entity._content.properties._rev = result.rev;
+			if (result.ok) entity._content.couchdb._rev = result.rev;
 
 			return result;
 		} catch (error) {
@@ -116,7 +116,7 @@ export class DataService {
 			const result = await this.namespace.database.pouchDb.bulkDocs(docs);
 			result.forEach((resultItem, index) => {
 				if (resultItem.ok)
-					entities[index]._content.properties._rev = resultItem.rev;
+					entities[index]._content.couchdb._rev = resultItem.rev;
 			});
 			return result;
 		} catch (error) {

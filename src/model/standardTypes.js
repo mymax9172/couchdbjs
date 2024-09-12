@@ -15,7 +15,7 @@ const BasePropertyType = {
 	 * @param {object} options Options
 	 * @returns {String} Stringified property value
 	 */
-	toString(value, options) {
+	format(value, options) {
 		return value?.toString?.() || value;
 	},
 
@@ -69,7 +69,7 @@ const DateTimePropertyType = {
 		return new Date(value);
 	},
 
-	toString(value, options) {
+	format(value, options) {
 		const formatter = new Intl.DateTimeFormat(options.locale, options.format);
 		return formatter.format(value);
 	},
